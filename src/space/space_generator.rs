@@ -138,7 +138,9 @@ mod test {
             line_num: 1,
         });
 
-        let space: Space = Space::new(lines, None);
+        let word_of_interest: Vec<String> = vec![String::from("test"), String::from("run")];
+
+        let space: Space = Space::new(lines, Some(word_of_interest));
         assert_eq!(space.tokens.len(), 3);
         assert_eq!(space.tokens[0].word, String::from("test"));
         assert_eq!(space.tokens[0].line_num, 0);
@@ -161,6 +163,11 @@ mod test {
         assert_eq!(space.tokens[2].embedding[0], 3.0);
         assert_eq!(space.tokens[2].embedding[1], 4.0);
         assert_eq!(space.tokens[2].embedding[2], 5.0);
+
+        assert!(space.words_of_interests.is_some());
+        assert_eq!(space.words_of_interests.clone().unwrap().len(), 2);
+        assert_eq!(space.words_of_interests.clone().unwrap()[0], String::from("test"));
+        assert_eq!(space.words_of_interests.clone().unwrap()[1], String::from("run"));
     }
 
     #[test]
@@ -188,6 +195,8 @@ mod test {
 
     #[test]
     fn test_get_random_tokens() {
+        let mut word_of_interest: Vec<String> = Vec::new();
+        word_of_interest.push(String::from("test"));
         let space: Space = Space::new(vec![
             Token {
                 word: String::from("test"),
@@ -206,7 +215,7 @@ mod test {
                 line_num: 1,
                 position: 0,
                 embedding: vec![3.0, 4.0, 5.0],
-            }], None);
+            }], Some(word_of_interest));
 
         let token = space.get_random_tokens(1, 1);
         assert_eq!(token.len(), 1);

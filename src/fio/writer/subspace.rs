@@ -1,9 +1,9 @@
-use crate::space::subspace_generator::SubSpace;
 use std::fs::OpenOptions;
 use std::io::Write;
 use crate::fio::writer::WriterOperator;
+use crate::space::space_generator::Space;
 
-impl WriterOperator for SubSpace {
+impl WriterOperator for Space {
 
     fn write(&self, path: &str) {
         let mut file = OpenOptions::new()

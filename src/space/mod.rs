@@ -3,8 +3,8 @@ use super::Token;
 use rand::prelude::*;
 use rand_chacha::ChaCha8Rng;
 
-pub mod global_space_generator;
-pub mod subspace_generator;
+pub mod space_generator;
+// pub mod subspace_generator;
 
 pub trait SpaceOperator {
     fn new<T: TokenOperators>(tokens: T, words_of_interests: Option<Vec<String>>) -> Self;

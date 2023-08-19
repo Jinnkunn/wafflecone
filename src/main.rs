@@ -43,12 +43,11 @@ fn main() {
     println!("male center: {:?}", male_center);
     println!("female center: {:?}", female_center);
 
-    let calculator = Calculator::new();
-    let result = calculator.bias_calculate(random_sub_space, vec![
+    let calculator = Calculator::new(random_sub_space, vec![
         female_sub_space,
         male_sub_space,
     ]);
 
-    println!("result: {:?}", result);
+    calculator.print();
 
 }

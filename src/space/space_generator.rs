@@ -45,7 +45,7 @@ impl SpaceOperator for Space {
         println!("type: global space");
         println!("number of tokens: {}", self.tokens.len());
         println!("dimensions: {}", self.tokens[0].embedding.len());
-        println!("token of interest: None");
+        println!("token of interest: {}", self.words_of_interests.clone().unwrap_or(vec![]).join(", "));
         println!("-----------------------");
     }
 }

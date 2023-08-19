@@ -18,15 +18,23 @@ impl SpaceOperator for Space {
         for item in items.get_all_tokens() {
             tokens.push(item);
         }
-        Space {
-            tokens,
-            words_of_interests,
+
+        match tokens.len() > 0 {
+            true => {
+                Space {
+                    tokens,
+                    words_of_interests,
+                }
+            },
+            false => {
+                panic!("The space is empty!");
+            }
         }
     }
 
     /// Find the words of interest in the space
-    fn find(&self, target_words: Vec<String>) -> Vec<Token> {
-        find(self.tokens.clone(), target_words)
+    fn find(&self, target_words: &Vec<String>) -> Vec<Token> {
+        find(&self.tokens.clone(), &target_words)
     }
 
     /// Calculate the center of the space
@@ -48,6 +56,51 @@ impl SpaceOperator for Space {
         println!("token of interest: {}", self.words_of_interests.clone().unwrap_or(vec![]).join(", "));
         println!("-----------------------");
     }
+}
+
+
+fn get_center(tokens: Vec<Token>) -> Vec<f64> {
+    let mut sum_of_embeddings: Vec<f64> = Vec::new();
+    for token in tokens.clone() {
+        if sum_of_embeddings.len() == 0 {
+            for embedding in token.embedding.clone() {
+                sum_of_embeddings.push(embedding);
+            }
+        } else {
+            for i in 0..sum_of_embeddings.len() {
+                sum_of_embeddings[i] += token.embedding[i];
+            }
+        }
+    }
+    let mut center: Vec<f64> = Vec::new();
+    for embedding in sum_of_embeddings {
+        center.push(embedding / tokens.len() as f64);
+    }
+    center
+}
+
+fn find(space_tokens: &Vec<Token>, passed_in_words: &Vec<String>) -> Vec<Token> {
+    let mut find_tokens:Vec<Token> = Vec::new();
+    for token in space_tokens {
+        if passed_in_words.contains(&token.word) {
+            find_tokens.push(token.clone())
+        }
+    }
+    find_tokens
+}
+
+fn get_random_tokens(tokens: Vec<Token>, num: i64, random_seed: i64) -> Vec<Token> {
+    let total_tokens = tokens.len();
+    let mut random_tokens: Vec<Token> = Vec::new();
+    // set random seed, get random tokens without replacement
+    let mut rng = ChaCha8Rng::seed_from_u64(random_seed as u64);
+    let mut random_indices: Vec<usize> = (0..total_tokens).collect();
+    random_indices.shuffle(&mut rng);
+    for i in 0..num {
+        random_tokens.push(tokens[random_indices[i as usize]].clone());
+    }
+
+    random_tokens
 }
 
 #[cfg(test)]
@@ -221,48 +274,4 @@ mod test {
         let token = space.get_random_tokens(1, 1);
         assert_eq!(token.len(), 1);
     }
-}
-
-fn get_center(tokens: Vec<Token>) -> Vec<f64> {
-    let mut sum_of_embeddings: Vec<f64> = Vec::new();
-    for token in tokens.clone() {
-        if sum_of_embeddings.len() == 0 {
-            for embedding in token.embedding.clone() {
-                sum_of_embeddings.push(embedding);
-            }
-        } else {
-            for i in 0..sum_of_embeddings.len() {
-                sum_of_embeddings[i] += token.embedding[i];
-            }
-        }
-    }
-    let mut center: Vec<f64> = Vec::new();
-    for embedding in sum_of_embeddings {
-        center.push(embedding / tokens.len() as f64);
-    }
-    center
-}
-
-fn find(tokens: Vec<Token>, target_words: Vec<String>) -> Vec<Token> {
-    let mut find_tokens:Vec<Token> = Vec::new();
-    for token in tokens.clone() {
-        if target_words.contains(&token.word) {
-            find_tokens.push(token);
-        }
-    }
-    find_tokens
-}
-
-fn get_random_tokens(tokens: Vec<Token>, num: i64, random_seed: i64) -> Vec<Token> {
-    let total_tokens = tokens.len();
-    let mut random_tokens: Vec<Token> = Vec::new();
-    // set random seed, get random tokens without replacement
-    let mut rng = ChaCha8Rng::seed_from_u64(random_seed as u64);
-    let mut random_indices: Vec<usize> = (0..total_tokens).collect();
-    random_indices.shuffle(&mut rng);
-    for i in 0..num {
-        random_tokens.push(tokens[random_indices[i as usize]].clone());
-    }
-
-    random_tokens
 }

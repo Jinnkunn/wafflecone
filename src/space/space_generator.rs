@@ -1,6 +1,6 @@
 use crate::models::TokenOperators;
 use crate::models::Token;
-use super::SpaceOperator;
+use super::SpaceGenerator;
 
 use rand_chacha::ChaCha8Rng;
 use rand::prelude::*;
@@ -8,11 +8,12 @@ use rand::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct Space {
+    pub space_name: String,
     pub tokens: Vec<Token>,
     pub words_of_interests: Option<Vec<String>>,
 }
 
-impl SpaceOperator for Space {
+impl SpaceGenerator for Space {
     fn new<T: TokenOperators>(items: T, words_of_interests: Option<Vec<String>>) -> Space {
         let mut tokens: Vec<Token> = Vec::new();
         for item in items.get_all_tokens() {
@@ -22,6 +23,10 @@ impl SpaceOperator for Space {
         match tokens.len() > 0 {
             true => {
                 Space {
+                    space_name: match &words_of_interests {
+                        None => {"Global Space".to_string()}
+                        Some(x) => {format!("Space of {}", x[0])}
+                    },
                     tokens,
                     words_of_interests,
                 }
@@ -30,6 +35,10 @@ impl SpaceOperator for Space {
                 panic!("The space is empty!");
             }
         }
+    }
+
+    fn set_space_name(&mut self, name: String) {
+        self.space_name = name;
     }
 
     /// Find the words of interest in the space

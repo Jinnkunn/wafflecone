@@ -7,10 +7,11 @@ use models::Token;
 use fio::reader::conceptx::ConceptXReader;
 use fio::reader::Reader;
 
-use space::SpaceOperator;
+use space::SpaceGenerator;
 use crate::fio::writer::WriterOperator;
 use crate::space::space_generator::Space;
-use crate::space::cos_similarity;
+use crate::space::space_calculator::Calculator;
+use crate::space::SpaceCalculator;
 
 fn main() {
     let data = ConceptXReader::new().read("./test_data/layer12.json");
@@ -41,5 +42,13 @@ fn main() {
 
     println!("male center: {:?}", male_center);
     println!("female center: {:?}", female_center);
+
+    let calculator = Calculator::new();
+    let result = calculator.bias_calculate(random_sub_space, vec![
+        female_sub_space,
+        male_sub_space,
+    ]);
+
+    println!("result: {:?}", result);
 
 }

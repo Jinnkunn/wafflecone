@@ -13,7 +13,7 @@ use crate::space::space_generator::Space;
 use crate::space::cos_similarity;
 
 fn main() {
-    let data = ConceptXReader::new().read("./test_data/conceptx.json");
+    let data = ConceptXReader::new().read("./test_data/layer12.json");
     let space = Space::new(data, None);
 
     let random_token = space.get_random_tokens(10, 1);

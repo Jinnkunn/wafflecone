@@ -45,15 +45,6 @@ impl SpaceCalculator for Calculator {
         }
     }
 
-    fn bias_asb_sum_average(&self) -> HashMap<String, f64> {
-        let mut bias_asb_sum_average: HashMap<String, f64> = HashMap::new();
-        for (space_name, relationship) in self.similarities.iter() {
-            let asb_sum_average = relationship.iter().map(|(_, similarity)| similarity.abs()).sum::<f64>() / relationship.len() as f64;
-            bias_asb_sum_average.insert(space_name.clone(), asb_sum_average);
-        }
-        bias_asb_sum_average
-    }
-
     fn bias_sum_average(&self) -> HashMap<String, f64> {
         let mut bias_sum_average: HashMap<String, f64> = HashMap::new();
         for (space_name, relationship) in self.similarities.iter() {
@@ -61,6 +52,15 @@ impl SpaceCalculator for Calculator {
             bias_sum_average.insert(space_name.clone(), sum_average);
         }
         bias_sum_average
+    }
+
+    fn bias_asb_sum_average(&self) -> HashMap<String, f64> {
+        let mut bias_asb_sum_average: HashMap<String, f64> = HashMap::new();
+        for (space_name, relationship) in self.similarities.iter() {
+            let asb_sum_average = relationship.iter().map(|(_, similarity)| similarity.abs()).sum::<f64>() / relationship.len() as f64;
+            bias_asb_sum_average.insert(space_name.clone(), asb_sum_average);
+        }
+        bias_asb_sum_average
     }
 
     fn print(&self){

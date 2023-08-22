@@ -4,11 +4,13 @@ use crate::space::{SpaceCalculator, SpaceGenerator};
 
 pub struct Calculator{
     similarities: HashMap<String, HashMap<String, f64>>,
-    ideal_similarity: Vec<f64>,
+    ideal_similarity: f64,
 }
 
 impl SpaceCalculator for Calculator {
     fn new(random_space: Space, compare_space: Vec<Space>) -> Calculator {
+        assert!(compare_space.len() > 0, "compare_space should have at least one space");
+
         let mut bias_dict: HashMap<String, HashMap<String, f64>> = HashMap::new();
 
         for one_compare_space in compare_space.clone() {
@@ -27,18 +29,18 @@ impl SpaceCalculator for Calculator {
         }
 
         // calculate the mean of all the center of compare_space with the size of compare_space[0].len
-        let mut ideal_similarity: Vec<f64> = vec![0.0; compare_space[0].get_center().len()];
+        let mut ideal_center: Vec<f64> = vec![0.0; compare_space[0].get_center().len()];
         for one_compare_space in compare_space.clone() {
             let one_compare_space_center = one_compare_space.get_center();
-            ideal_similarity = ideal_similarity.iter().zip(one_compare_space_center.iter()).map(|(a, b)| a + b).collect();
+            ideal_center = ideal_center.iter().zip(one_compare_space_center.iter()).map(|(a, b)| a + b).collect();
         }
-        ideal_similarity = ideal_similarity.iter().map(|a| a / compare_space.len() as f64).collect();
+        ideal_center = ideal_center.iter().map(|a| a / compare_space.len() as f64).collect();
 
-        assert_eq!(ideal_similarity.len(), compare_space[0].get_center().len());
+        assert_eq!(ideal_center.len(), compare_space[0].get_center().len());
 
         Calculator{
             similarities: bias_dict,
-            ideal_similarity,
+            ideal_similarity: cos_similarity(&compare_space[0].get_center(), &ideal_center)
         }
     }
 

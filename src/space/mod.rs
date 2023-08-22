@@ -16,5 +16,7 @@ pub trait SpaceGenerator {
 pub trait SpaceCalculator {
     fn new(random_space: Space, compare_space: Vec<Space>) -> Self;
     // fn bias_calculate(&self, random_space: Space, compare_space: Vec<Space>) -> HashMap<String, f64>;
+    fn bias_sum_average(&self) -> f64;
+    fn bias_asb_sum_average(&self) -> f64;
     fn print(&self);
 }

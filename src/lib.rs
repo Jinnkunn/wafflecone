@@ -37,7 +37,7 @@ fn calculator(path: &str) -> Calculator {
         String::from("boy")
     ];
     let male_sub_space = Space::new(space.find(&male_words), Option::from(male_words));
-    male_sub_space.print_summary();
+    // male_sub_space.print_summary();
     let _male_center = male_sub_space.get_center();
 
     let female_words = vec![
@@ -46,7 +46,7 @@ fn calculator(path: &str) -> Calculator {
         String::from("girl")
     ];
     let female_sub_space = Space::new(space.find(&female_words), Option::from(female_words));
-    female_sub_space.print_summary();
+    // female_sub_space.print_summary();
     let _female_center = female_sub_space.get_center();
 
     let calculator = Calculator::new(random_sub_space, vec![

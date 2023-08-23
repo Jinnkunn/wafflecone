@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use pyo3::{pyclass, pymethods};
+use crate::fio::writer::WriterOperator;
 use crate::space::space_generator::Space;
 use crate::space::{SpaceCalculator, SpaceGenerator};
 
 #[pyclass]
 pub struct Calculator{
-    similarities: HashMap<String, HashMap<String, f64>>,
-    ideal_similarity: f64,
+    pub(crate) similarities: HashMap<String, HashMap<String, f64>>,
+    pub(crate) ideal_similarity: f64,
 }
 
 impl SpaceCalculator for Calculator {
@@ -104,5 +105,9 @@ impl Calculator {
             bias_asb_sum_average.insert(space_name.clone(), asb_sum_average);
         }
         bias_asb_sum_average
+    }
+
+    fn save_summary(&self, path: Option<&str>) {
+        self.write(path.unwrap_or("./"));
     }
 }

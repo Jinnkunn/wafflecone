@@ -1,7 +1,9 @@
 use std::collections::HashMap;
+use pyo3::{pyclass, pymethods};
 use crate::space::space_generator::Space;
 use crate::space::{SpaceCalculator, SpaceGenerator};
 
+#[pyclass]
 pub struct Calculator{
     similarities: HashMap<String, HashMap<String, f64>>,
     ideal_similarity: f64,
@@ -45,6 +47,7 @@ impl SpaceCalculator for Calculator {
         }
     }
 
+
     fn bias_sum_average(&self) -> HashMap<String, f64> {
         let mut bias_sum_average: HashMap<String, f64> = HashMap::new();
         for (space_name, relationship) in self.similarities.iter() {
@@ -81,4 +84,16 @@ pub fn cos_similarity(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
         norm2 += center2[i] * center2[i];
     }
     dot_product / (norm1.sqrt() * norm2.sqrt())
+}
+
+#[pymethods]
+impl Calculator {
+    fn bias_sum_average(&self) -> HashMap<String, f64> {
+        let mut bias_sum_average: HashMap<String, f64> = HashMap::new();
+        for (space_name, relationship) in self.similarities.iter() {
+            let sum_average = relationship.iter().map(|(_, similarity)| similarity).sum::<f64>() / relationship.len() as f64;
+            bias_sum_average.insert(space_name.clone(), sum_average);
+        }
+        bias_sum_average
+    }
 }

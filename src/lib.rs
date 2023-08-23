@@ -22,7 +22,7 @@ fn version() {
 }
 
 #[pyfunction]
-fn bias_asb_sum_average(path: &str) -> HashMap<String, f64> {
+fn calculator(path: &str) -> Calculator {
     let data = ConceptXReader::new().read(path);
     let space = Space::new(data, None);
 
@@ -54,13 +54,15 @@ fn bias_asb_sum_average(path: &str) -> HashMap<String, f64> {
         male_sub_space,
     ]);
 
-    calculator.bias_asb_sum_average()
+    calculator
+
+    // calculator.bias_asb_sum_average()
 
 }
 
 #[pymodule]
 fn wafflecone(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(version, m)?)?;
-    m.add_function(wrap_pyfunction!(bias_asb_sum_average, m)?)?;
+    m.add_function(wrap_pyfunction!(calculator, m)?)?;
     Ok(())
 }

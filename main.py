@@ -2,5 +2,5 @@ import wafflecone
 
 wafflecone.version()
 
-result = wafflecone.bias_asb_sum_average("./test_data/layer12.json")
-print(result)
+calculator = wafflecone.calculator("./test_data/layer12.json")
+print(calculator.bias_sum_average())

@@ -3,6 +3,10 @@ name = "wafflecone"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "wafflecone"
+crate-type = ["cdylib"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -10,3 +14,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 rand = "0.8.5"
 rand_chacha = "0.3.1"
+
+[dependencies.pyo3]
+version = "0.18.0"
+# "abi3-py37" tells pyo3 (and maturin) to build using the stable ABI with minimum Python version 3.7
+features = ["abi3-py37"]

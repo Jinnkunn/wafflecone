@@ -10,4 +10,4 @@ print(calculator.bias_sum_average())
 print(calculator.bias_asb_sum_average())
 calculator.save_summary()
 
-wafflecone.visualize()
+wafflecone.visualize(3000)

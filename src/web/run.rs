@@ -7,9 +7,9 @@ pub struct Web {
 }
 
 impl Web {
-    pub fn new() -> Web {
+    pub fn new(port: u16) -> Self {
         Web {
-            port: 8081,
+            port: port,
             version: env!("CARGO_PKG_VERSION").to_string(),
         }
     }
@@ -19,6 +19,8 @@ impl Web {
         let port = self.port;
 
         let handle = thread::spawn(move || {
+            // wait for 1 second to make sure the server is up
+            thread::sleep(std::time::Duration::from_secs(1));
             let _output = Command::new("python")
                 .arg("-m")
                 .arg("webbrowser")

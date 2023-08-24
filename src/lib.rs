@@ -55,8 +55,8 @@ fn calculator(path: &str,
 }
 
 #[pyfunction]
-fn visualize() {
-    let web = web::run::Web::new();
+fn visualize(port: Option<u16>) {
+    let web = web::run::Web::new(port.unwrap_or(8000));
     web.run();
 }
 

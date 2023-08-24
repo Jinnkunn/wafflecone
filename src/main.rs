@@ -1,8 +1,9 @@
 mod fio;
 mod space;
-mod models;
+mod embedding;
+mod web;
 
-use models::Token;
+use embedding::models::Token;
 
 use fio::reader::conceptx::ConceptXReader;
 use fio::reader::Reader;

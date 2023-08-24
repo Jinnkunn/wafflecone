@@ -1,6 +1,6 @@
 use super::Reader;
-use super::Line;
-use super::Token;
+use crate::embedding::models::Line;
+use crate::embedding::models::Token;
 use std::io::BufRead;
 use serde::{Deserialize, Serialize};
 

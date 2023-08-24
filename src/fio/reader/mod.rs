@@ -1,7 +1,6 @@
 pub mod conceptx;
 
-use crate::models::Line;
-use crate::models::Token;
+use crate::embedding::models::Line;
 
 pub trait Reader {
     fn new() -> Self;

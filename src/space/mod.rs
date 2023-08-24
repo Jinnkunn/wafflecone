@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use crate::models::TokenOperators;
+use crate::embedding::models::TokenOperators;
 use crate::space::space_generator::Space;
 use super::Token;
 pub mod space_generator;

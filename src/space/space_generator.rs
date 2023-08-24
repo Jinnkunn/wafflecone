@@ -1,5 +1,5 @@
-use crate::models::TokenOperators;
-use crate::models::Token;
+use crate::embedding::models::TokenOperators;
+use crate::embedding::models::Token;
 use super::SpaceGenerator;
 
 use rand_chacha::ChaCha8Rng;
@@ -113,7 +113,7 @@ fn get_random_tokens(tokens: Vec<Token>, num: i64, random_seed: i64) -> Vec<Toke
 
 #[cfg(test)]
 mod test {
-    use crate::models::Line;
+    use crate::embedding::models::Line;
     use super::*;
 
     #[test]

@@ -54,9 +54,16 @@ fn calculator(path: &str,
 
 }
 
+#[pyfunction]
+fn visualize() {
+    let web = web::run::Web::new();
+    web.run();
+}
+
 #[pymodule]
 fn wafflecone(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(version, m)?)?;
     m.add_function(wrap_pyfunction!(calculator, m)?)?;
+    m.add_function(wrap_pyfunction!(visualize, m)?)?;
     Ok(())
 }

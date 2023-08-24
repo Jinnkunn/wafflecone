@@ -9,3 +9,5 @@ calculator = wafflecone.calculator("./test_data/layer12.json", [male_seed, femal
 print(calculator.bias_sum_average())
 print(calculator.bias_asb_sum_average())
 calculator.save_summary()
+
+wafflecone.visualize()

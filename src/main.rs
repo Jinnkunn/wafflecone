@@ -2,6 +2,7 @@ mod fio;
 mod space;
 mod embedding;
 mod web;
+mod util;
 
 use embedding::models::Token;
 
@@ -15,7 +16,7 @@ use crate::space::space_calculator::Calculator;
 use crate::space::SpaceCalculator;
 
 fn main() {
-    let data = ConceptXReader::new().read("./test_data/layer12.json");
+    let data = ConceptXReader::new().read("./test_data/layer12.json", true);
     let space = Space::new(data, None);
 
     let random_token = space.get_random_tokens(10, 1);

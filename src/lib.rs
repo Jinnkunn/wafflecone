@@ -4,6 +4,7 @@ mod fio;
 mod space;
 mod embedding;
 mod web;
+mod util;
 
 use embedding::models::Token;
 
@@ -27,8 +28,9 @@ fn calculator(path: &str,
               random_token_num: Option<i64>, // number of random tokens
               random_token_seed: Option<i64>, // random seed
               subspace_folder_path: Option<&str>, // folder path to save subspaces
+              user_friendly: Option<bool>
 ) -> Calculator {
-    let data = ConceptXReader::new().read(path);
+    let data = ConceptXReader::new().read(path, user_friendly.unwrap_or(false));
     let space = Space::new(data.clone(), None);
 
     let random_token = space.get_random_tokens(

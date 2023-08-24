@@ -1,6 +1,7 @@
 use super::Reader;
 use crate::embedding::models::Line;
 use crate::embedding::models::Token;
+use crate::util::progress_bar::ProgressBar;
 use std::io::BufRead;
 use serde::{Deserialize, Serialize};
 
@@ -30,10 +31,20 @@ impl Reader for ConceptXReader {
         ConceptXReader {}
     }
 
-    fn read(&self, path: &str) -> Vec<Line> {
+    fn read(&self, path: &str, user_friendly: bool) -> Vec<Line> {
         let file = std::fs::File::open(path).unwrap();
         let mut activations: Vec<LineConceptX> = Vec::new();
         // let metadata = std::fs::metadata(path).unwrap();
+
+        let total_lines = match std::fs::metadata(path) {
+            Ok(metadata) => metadata.len() as usize,
+            Err(_) => {
+                println!("Error reading file");
+                return vec![];
+            },
+        };
+
+        let mut bar = ProgressBar::new(total_lines as u64, user_friendly);
 
         // for loop to read line by line
         for line in std::io::BufReader::new(file).lines() {
@@ -58,7 +69,10 @@ impl Reader for ConceptXReader {
                     return vec![];
                 },
             };
+            bar.inc(1);
         }
+
+        bar.finish();
 
         converter(activations)
     }
@@ -94,14 +108,14 @@ mod test {
     #[test]
     fn test_read_with_correct_number() {
         let reader = ConceptXReader::new();
-        let lines = reader.read("./test_data/conceptx.json");
+        let lines = reader.read("./test_data/conceptx.json", false);
         assert_eq!(lines.len(), 10);
     }
 
     #[test]
     fn test_read_values() {
         let reader = ConceptXReader::new();
-        let lines = reader.read("./test_data/conceptx.json");
+        let lines = reader.read("./test_data/conceptx.json", false);
         assert_eq!(lines.len(), 10);
         assert_eq!(lines[0].tokens[0].word, "[CLS]0");
         assert_eq!(lines[0].tokens[0].line_num, 0);
@@ -111,7 +125,7 @@ mod test {
     #[test]
     fn test_read_values2() {
         let reader = ConceptXReader::new();
-        let lines = reader.read("./test_data/conceptx.json");
+        let lines = reader.read("./test_data/conceptx.json", false);
         assert_eq!(lines.len(), 10);
         assert_eq!(lines[1].tokens[0].word, "[CLS]1");
         assert_eq!(lines[1].tokens[0].line_num, 1);

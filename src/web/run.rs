@@ -1,5 +1,7 @@
 use std::process::Command;
 use std::thread;
+use pyo3::{Py, PyAny, Python};
+use pyo3::prelude::PyModule;
 
 pub struct Web {
     pub port: u16,
@@ -17,6 +19,8 @@ impl Web {
     pub fn run(&self) {
         // run two python processes
         let port = self.port;
+
+        let path = get_lib_path();
 
         let handle = thread::spawn(move || {
             // wait for 1 second to make sure the server is up
@@ -38,8 +42,35 @@ impl Web {
                 .arg("-m")
                 .arg("http.server")
                 .arg(format!("{}", self.port))
+                .arg("--directory")
+                .arg(path)
                 .output()
                 .expect("failed to execute process");
 
     }
+}
+
+fn get_lib_path() -> String {
+    let result = Python::with_gil(|py| {
+        let fun: Py<PyAny> = PyModule::from_code(
+            py,
+            r#"
+import os
+import wafflecone
+def get_dir():
+    return os.path.dirname(wafflecone.__file__)
+            "#,
+            "",
+            "",
+        )
+            .unwrap()
+            .getattr("get_dir")
+            .unwrap()
+            .into();
+
+        // call object without any arguments
+        fun.call0(py).unwrap()
+    });
+
+    result.to_string()
 }

@@ -52,8 +52,8 @@ impl SpaceGenerator for Space {
     }
 
     /// Get random tokens from the space, which will be used to generate subspaces
-    fn get_random_tokens(&self, num: i64, random_seed: i64) -> Vec<Token> {
-        get_random_tokens(self.tokens.clone(), num, random_seed)
+    fn get_random_tokens(&self, num: i64, random_seed: i64, exclude: Option<Vec<String>>) -> Vec<Token> {
+        get_random_tokens(self.tokens.clone(), num, random_seed, exclude)
     }
 
     /// Print the summary of the space
@@ -97,15 +97,28 @@ fn find(space_tokens: &Vec<Token>, passed_in_words: &Vec<String>) -> Vec<Token> 
     find_tokens
 }
 
-fn get_random_tokens(tokens: Vec<Token>, num: i64, random_seed: i64) -> Vec<Token> {
+fn get_random_tokens(tokens: Vec<Token>, num: i64, random_seed: i64, exclude: Option<Vec<String>>) -> Vec<Token> {
     let total_tokens = tokens.len();
+
     let mut random_tokens: Vec<Token> = Vec::new();
     // set random seed, get random tokens without replacement
     let mut rng = ChaCha8Rng::seed_from_u64(random_seed as u64);
     let mut random_indices: Vec<usize> = (0..total_tokens).collect();
     random_indices.shuffle(&mut rng);
-    for i in 0..num {
+
+    let mut selected_num = 0;
+    for i in 0..total_tokens {
+        // if tokens[random_indices[i as usize]].word is not in exclude
+        if exclude.is_some() {
+            if exclude.clone().unwrap().contains(&tokens[random_indices[i as usize]].word) {
+                continue;
+            }
+        }
         random_tokens.push(tokens[random_indices[i as usize]].clone());
+        selected_num += 1;
+        if selected_num == num {
+            break;
+        }
     }
 
     random_tokens

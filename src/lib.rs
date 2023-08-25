@@ -28,6 +28,7 @@ fn calculator(path: &str,
               random_token_num: Option<i64>, // number of random tokens
               random_token_seed: Option<i64>, // random seed
               subspace_folder_path: Option<&str>, // folder path to save subspaces
+              exclude_words: Option<Vec<String>>, // words to exclude from random tokens
               user_friendly: Option<bool>
 ) -> Calculator {
     let data = ConceptXReader::new().read(path, user_friendly.unwrap_or(false));
@@ -36,7 +37,8 @@ fn calculator(path: &str,
     let random_token = space.get_random_tokens(
         // use 80% of the data as default
         random_token_num.unwrap_or((data.len() as f64 * 0.8) as i64),
-        random_token_seed.unwrap_or(1)
+        random_token_seed.unwrap_or(1),
+        exclude_words
     );
 
     let subspace_folder = subspace_folder_path.unwrap_or("./");

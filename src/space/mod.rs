@@ -10,7 +10,7 @@ pub trait SpaceGenerator {
     fn set_space_name(&mut self, name: String);
     fn find(&self, words_of_interests: &Vec<String>) -> Vec<Token>;
     fn get_center(&self) -> Vec<f64>;
-    fn get_random_tokens(&self, num: i64, random_seed: i64) -> Vec<Token>;
+    fn get_random_tokens(&self, num: i64, random_seed: i64, exclude: Option<Vec<String>>) -> Vec<Token>;
     fn print_summary(&self);
 }
 

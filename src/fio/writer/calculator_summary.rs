@@ -4,7 +4,7 @@ use crate::fio::writer::WriterOperator;
 use crate::space::space_calculator::Calculator;
 
 impl WriterOperator for Calculator {
-    fn write(&self, path: &str) {
+    fn write(&self, path: &str, _if_show: bool) {
         let mut file = OpenOptions::new()
             .write(true)
             .create(true)

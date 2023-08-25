@@ -19,7 +19,7 @@ fn main() {
     let data = ConceptXReader::new().read("./test_data/layer12.json", true);
     let space = Space::new(data, None);
 
-    let random_token = space.get_random_tokens(10, 1);
+    let random_token = space.get_random_tokens(10, 1, None);
 
     let random_sub_space = Space::new(random_token.clone(), None);
     random_sub_space.write("./random_subspace.txt");

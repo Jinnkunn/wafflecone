@@ -32,8 +32,12 @@ fn calculator(path: &str,
               user_friendly: Option<bool>
 ) -> Calculator {
     let data = ConceptXReader::new().read(path, user_friendly.unwrap_or(false));
+
+    // Build the global space
     let space = Space::new(data.clone(), None);
 
+    // select random tokens from the global space
+    // then build a subspace with the random tokens
     let random_token = space.get_random_tokens(
         // use 80% of the data as default
         random_token_num.unwrap_or((data.len() as f64 * 0.8) as i64),
@@ -43,15 +47,18 @@ fn calculator(path: &str,
 
     let subspace_folder = subspace_folder_path.unwrap_or("./");
 
+    // save the random tokens to a file
     let random_sub_space = Space::new(random_token.clone(), None);
-    random_sub_space.write(format!("{}/random_subspace.txt", subspace_folder).as_str());
+    random_sub_space.write(format!("{}/random_subspace.txt", subspace_folder).as_str(), user_friendly.unwrap_or(false));
 
+    // build subspaces with the tokens of interests. e.g., male or female
     let mut sub_spaces: Vec<Space> = Vec::new();
     for subspace_seed in subspace_seeds {
         let sub_space = Space::new(space.find(&subspace_seed), Option::from(subspace_seed));
         sub_spaces.push(sub_space);
     }
 
+    // compute the bias of the random subspace
     let calculator = Calculator::new(random_sub_space, sub_spaces);
 
     calculator

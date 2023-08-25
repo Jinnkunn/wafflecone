@@ -108,6 +108,6 @@ impl Calculator {
     }
 
     fn save_summary(&self, path: Option<&str>) {
-        self.write(path.unwrap_or("./"));
+        self.write(path.unwrap_or("./"), false);
     }
 }

@@ -12,6 +12,6 @@ impl WriterOperator for Calculator {
             .unwrap();
 
         // todo: format the output
-        file.write_all(format!("ideal_similarity: {:?}\n", self.similarities).as_bytes()).unwrap();
+        file.write_all(format!("ideal_similarity: {:?}\n", self.bias).as_bytes()).unwrap();
     }
 }

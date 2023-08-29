@@ -6,7 +6,7 @@ use crate::space::{SpaceCalculator, SpaceGenerator};
 
 #[pyclass]
 pub struct Calculator{
-    pub(crate) similarities: HashMap<String, HashMap<String, f64>>,
+    pub(crate) bias: HashMap<String, HashMap<String, f64>>,
     pub(crate) ideal_similarity: f64,
 }
 
@@ -35,15 +35,15 @@ impl SpaceCalculator for Calculator {
             // tokens in random_space
 
             let relationship = random_space.tokens.iter().map(|token| {
-                let similarity = cos_similarity(&token.embedding, &one_compare_space_center) / ideal_similarity;
-                (token.word.clone(), similarity)
+                let bias = (cos_similarity(&token.embedding, &one_compare_space_center) - ideal_similarity) / ideal_similarity;
+                (token.word.clone(), bias)
             }).collect::<HashMap<String, f64>>();
 
             bias_dict.insert(one_compare_space.space_name, relationship);
         }
 
         Calculator{
-            similarities: bias_dict,
+            bias: bias_dict,
             ideal_similarity,
         }
     }
@@ -51,7 +51,9 @@ impl SpaceCalculator for Calculator {
 
     fn bias_sum_average(&self) -> HashMap<String, f64> {
         let mut bias_sum_average: HashMap<String, f64> = HashMap::new();
-        for (space_name, relationship) in self.similarities.iter() {
+        for (space_name, relationship) in self.bias.iter() {
+            // use each similarity - ideal_similarity
+            // then add them together
             let sum_average = relationship.iter().map(|(_, similarity)| similarity).sum::<f64>() / relationship.len() as f64;
             bias_sum_average.insert(space_name.clone(), sum_average);
         }
@@ -60,7 +62,9 @@ impl SpaceCalculator for Calculator {
 
     fn bias_asb_sum_average(&self) -> HashMap<String, f64> {
         let mut bias_asb_sum_average: HashMap<String, f64> = HashMap::new();
-        for (space_name, relationship) in self.similarities.iter() {
+        for (space_name, relationship) in self.bias.iter() {
+            // use each similarity - ideal_similarity, get the absolute value
+            // then add them together
             let asb_sum_average = relationship.iter().map(|(_, similarity)| similarity.abs()).sum::<f64>() / relationship.len() as f64;
             bias_asb_sum_average.insert(space_name.clone(), asb_sum_average);
         }
@@ -69,7 +73,7 @@ impl SpaceCalculator for Calculator {
 
     fn print(&self){
         // create a dictionary <String, f64> to store the bias
-        println!("bias_dict: {:?}", self.similarities);
+        println!("bias_dict: {:?}", self.bias);
         println!("ideal_similarity: {:?}", self.ideal_similarity)
     }
 }
@@ -91,7 +95,7 @@ pub fn cos_similarity(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
 impl Calculator {
     fn bias_sum_average(&self) -> HashMap<String, f64> {
         let mut bias_sum_average: HashMap<String, f64> = HashMap::new();
-        for (space_name, relationship) in self.similarities.iter() {
+        for (space_name, relationship) in self.bias.iter() {
             let sum_average = relationship.iter().map(|(_, similarity)| similarity).sum::<f64>() / relationship.len() as f64;
             bias_sum_average.insert(space_name.clone(), sum_average);
         }
@@ -100,7 +104,7 @@ impl Calculator {
 
     fn bias_asb_sum_average(&self) -> HashMap<String, f64> {
         let mut bias_asb_sum_average: HashMap<String, f64> = HashMap::new();
-        for (space_name, relationship) in self.similarities.iter() {
+        for (space_name, relationship) in self.bias.iter() {
             let asb_sum_average = relationship.iter().map(|(_, similarity)| similarity.abs()).sum::<f64>() / relationship.len() as f64;
             bias_asb_sum_average.insert(space_name.clone(), asb_sum_average);
         }

@@ -13,7 +13,7 @@ impl WriterOperator for Space {
             .open(path)
             .unwrap();
 
-        let mut progress_bar = ProgressBar::new(self.tokens.len() as u64, if_show);
+        let mut progress_bar = ProgressBar::new(self.tokens.len() as u64, "Space Building", if_show);
 
         for token in &self.tokens {
             let mut line = String::new();

@@ -32,42 +32,27 @@ impl Reader for ConceptXReader {
     }
 
     fn read(&self, path: &str, user_friendly: bool) -> Vec<Line> {
-        let mut activations: Vec<LineConceptX> = Vec::new();
-
         let file = std::fs::File::open(path).unwrap();
-        let all_lines = std::io::BufReader::new(file).lines();
-        let mut bar = ProgressBar::new(all_lines.count() as u64, user_friendly);
+        let buf = std::io::BufReader::new(&file);
 
-        let file = std::fs::File::open(path).unwrap();
-        let all_lines = std::io::BufReader::new(file).lines();
+        let mut pb = ProgressBar::new(file.metadata().unwrap().len(), "Reading Files",user_friendly);
 
-        // for loop to read line by line
-        for line in all_lines {
-            let line = match line {
-                Ok(line) => line,
-                Err(_) => {
-                    println!("Error reading line");
-                    return vec![];
-                },
-            };
-            match serde_json::from_str::<LineConceptX>(&line) {
-                Ok(mut activation) => {
-                    activation.features.iter_mut().for_each(|x| {
-                        x.token = x.token.replace("##", "");
-                        // for roberta
-                        x.token = x.token.replace("Ġ", "");
-                    });
-                    activations.push(activation);
-                },
-                Err(_) => {
-                    println!("Error parsing line");
-                    return vec![];
-                },
-            };
-            bar.inc(1);
-        }
+        let activations = buf.lines()
+            .map(|line| {
+                pb.inc(line.as_ref().unwrap().len() as u64);
+                line.unwrap()
+            })
+            .map(|line| {
+                let mut activation = serde_json::from_str::<LineConceptX>(&line).unwrap();
+                activation.features.iter_mut().for_each(|x| {
+                    x.token = x.token.replace("##", "");
+                    x.token = x.token.replace("Ġ", ""); // for roberta
+                });
+                activation
+            })
+            .collect::<Vec<LineConceptX>>();
 
-        bar.finish();
+        pb.finish();
 
         converter(activations)
     }
@@ -83,7 +68,7 @@ fn converter(activations: Vec<LineConceptX>) -> Vec<Line> {
                     word: String::from(&feature.token),
                     line_num: line.linex_index,
                     position: token.index,
-                    embedding: token.values
+                    embedding: token.values,
                 });
             }
         }

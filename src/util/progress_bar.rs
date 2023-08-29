@@ -7,16 +7,26 @@ pub struct ProgressBar {
 }
 
 impl ProgressBar {
-    pub fn new(total: u64, if_show: bool) -> ProgressBar {
-        if if_show {
-            ProgressBar {
-                bar: Some(indicatif::ProgressBar::new(total)),
-                if_show,
+    pub fn new(total: u64, title: &str, if_show: bool) -> ProgressBar {
+        match if_show {
+            true => {
+                let bar = indicatif::ProgressBar::new(total);
+                bar.set_style(
+                    indicatif::ProgressStyle::with_template("[{prefix:>20.green}] {bar:40.cyan/blue} {percent}% [{elapsed_precise}]")
+                        .unwrap()
+                        .progress_chars("#>-"),
+                );
+                bar.set_prefix(title.to_string());
+                ProgressBar {
+                    bar: Some(bar),
+                    if_show,
+                }
             }
-        } else {
-            ProgressBar {
-                bar: None,
-                if_show,
+            false => {
+                ProgressBar {
+                    bar: None,
+                    if_show,
+                }
             }
         }
     }

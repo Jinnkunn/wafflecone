@@ -2,6 +2,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use crate::fio::writer::WriterOperator;
 use crate::space::space_generator::Space;
+use crate::util::constant;
 use crate::util::progress_bar::ProgressBar;
 
 impl WriterOperator for Space {
@@ -13,7 +14,7 @@ impl WriterOperator for Space {
             .open(path)
             .unwrap();
 
-        let mut progress_bar = ProgressBar::new(self.tokens.len() as u64, "Space Building", if_show);
+        let mut progress_bar = ProgressBar::new(self.tokens.len() as u64, constant::SPACE_GENERATING, if_show);
 
         for token in &self.tokens {
             let mut line = String::new();

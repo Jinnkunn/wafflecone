@@ -4,6 +4,7 @@ use crate::embedding::models::Token;
 use crate::util::progress_bar::ProgressBar;
 use std::io::BufRead;
 use serde::{Deserialize, Serialize};
+use crate::util::constant;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct LineConceptX {
@@ -35,8 +36,7 @@ impl Reader for ConceptXReader {
         let file = std::fs::File::open(path).unwrap();
         let buf = std::io::BufReader::new(&file);
 
-        let mut pb = ProgressBar::new(file.metadata().unwrap().len(), "Reading Files",user_friendly);
-
+        let mut pb = ProgressBar::new(file.metadata().unwrap().len(), constant::FILE_READING, user_friendly);
         let activations = buf.lines()
             .map(|line| {
                 pb.inc(line.as_ref().unwrap().len() as u64);
@@ -46,7 +46,7 @@ impl Reader for ConceptXReader {
                 let mut activation = serde_json::from_str::<LineConceptX>(&line).unwrap();
                 activation.features.iter_mut().for_each(|x| {
                     x.token = x.token.replace("##", "");
-                    x.token = x.token.replace("Ġ", ""); // for roberta
+                    x.token = x.token.replace("Ġ", "");
                 });
                 activation
             })

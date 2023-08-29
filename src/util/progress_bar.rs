@@ -1,5 +1,6 @@
 
 use indicatif;
+use crate::util::constant;
 
 pub struct ProgressBar {
     bar: Option<indicatif::ProgressBar>,
@@ -12,9 +13,9 @@ impl ProgressBar {
             true => {
                 let bar = indicatif::ProgressBar::new(total);
                 bar.set_style(
-                    indicatif::ProgressStyle::with_template("[{prefix:>20.green}] {bar:40.cyan/blue} {percent}% [{elapsed_precise}]")
+                    indicatif::ProgressStyle::with_template(constant::TEMPLATE)
                         .unwrap()
-                        .progress_chars("#>-"),
+                        .progress_chars(constant::PROGRESS_CHARS),
                 );
                 bar.set_prefix(title.to_string());
                 ProgressBar {

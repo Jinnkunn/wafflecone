@@ -32,22 +32,17 @@ impl Reader for ConceptXReader {
     }
 
     fn read(&self, path: &str, user_friendly: bool) -> Vec<Line> {
-        let file = std::fs::File::open(path).unwrap();
         let mut activations: Vec<LineConceptX> = Vec::new();
-        // let metadata = std::fs::metadata(path).unwrap();
 
-        let total_lines = match std::fs::metadata(path) {
-            Ok(metadata) => metadata.len() as usize,
-            Err(_) => {
-                println!("Error reading file");
-                return vec![];
-            },
-        };
+        let file = std::fs::File::open(path).unwrap();
+        let all_lines = std::io::BufReader::new(file).lines();
+        let mut bar = ProgressBar::new(all_lines.count() as u64, user_friendly);
 
-        let mut bar = ProgressBar::new(total_lines as u64, user_friendly);
+        let file = std::fs::File::open(path).unwrap();
+        let all_lines = std::io::BufReader::new(file).lines();
 
         // for loop to read line by line
-        for line in std::io::BufReader::new(file).lines() {
+        for line in all_lines {
             let line = match line {
                 Ok(line) => line,
                 Err(_) => {

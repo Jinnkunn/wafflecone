@@ -111,6 +111,29 @@ impl Calculator {
         bias_asb_sum_average
     }
 
+    fn bias_mse(&self) -> f64 {
+        let bias_sum_average = self.bias_sum_average();
+        // MSE of bias_sum_average
+        let mut bias: f64 = 0.0;
+        for (_, similarity) in bias_sum_average.iter() {
+            bias += similarity * similarity;
+        }
+        bias = bias / bias_sum_average.len() as f64;
+        bias
+    }
+
+    fn bias_mse_abs(&self) -> f64 {
+        let bias_sum_average = self.bias_asb_sum_average();
+        // MSE of bias_sum_average
+        let mut bias: f64 = 0.0;
+        for (_, similarity) in bias_sum_average.iter() {
+            bias += similarity * similarity;
+        }
+        bias = bias / bias_sum_average.len() as f64;
+        bias
+    }
+
+
     fn save_summary(&self, path: Option<&str>) {
         self.write(path.unwrap_or("./"), false);
     }

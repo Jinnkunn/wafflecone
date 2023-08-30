@@ -53,7 +53,20 @@ impl SpaceGenerator for Space {
 
     /// Get random tokens from the space, which will be used to generate subspaces
     fn get_random_tokens(&self, num: i64, random_seed: i64, exclude: Option<Vec<String>>) -> Vec<Token> {
-        get_random_tokens(self.tokens.clone(), num, random_seed, exclude)
+        // combine exclude words and words of interests
+        let mut exclude: Vec<String> = match exclude {
+            None => {Vec::new()}
+            Some(x) => {x}
+        };
+        match self.words_of_interests.clone() {
+            None => {}
+            Some(x) => {
+                for word in x {
+                    exclude.push(word);
+                }
+            }
+        }
+        get_random_tokens(self.tokens.clone(), num, random_seed, Some(exclude))
     }
 
     /// Print the summary of the space
@@ -120,7 +133,6 @@ fn get_random_tokens(tokens: Vec<Token>, num: i64, random_seed: i64, exclude: Op
             break;
         }
     }
-
     random_tokens
 }
 

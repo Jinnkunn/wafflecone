@@ -22,7 +22,7 @@ fn main() {
     let random_token = space.get_random_tokens(10, 1, None);
 
     let random_sub_space = Space::new(random_token.clone(), None);
-    random_sub_space.write("./random_subspace.txt");
+    random_sub_space.write("./random_subspace.txt", true);
 
     let male_words = vec![
         String::from("male"),

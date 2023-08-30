@@ -304,7 +304,7 @@ mod test {
                 embedding: vec![3.0, 4.0, 5.0],
             }], Some(word_of_interest));
 
-        let token = space.get_random_tokens(1, 1);
+        let token = space.get_random_tokens(1, 1, None);
         assert_eq!(token.len(), 1);
     }
 }

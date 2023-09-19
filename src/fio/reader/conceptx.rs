@@ -48,6 +48,7 @@ impl Reader for ConceptXReader {
                 activation.features.iter_mut().for_each(|x| {
                     x.token = x.token.replace("##", "");
                     x.token = x.token.replace("Ġ", "");
+                    x.token = x.token.replace("\\u0120", "");
                 });
                 activation
             })
@@ -102,6 +103,7 @@ mod test {
         let lines = reader.read("./test_data/conceptx.json", false);
         assert_eq!(lines.len(), 10);
         assert_eq!(lines[0].tokens[0].word, "[CLS]0");
+        assert_eq!(lines[0].tokens[1].word, "new");
         assert_eq!(lines[0].tokens[0].line_num, 0);
         assert_eq!(lines[0].tokens[0].position, 0);
     }

@@ -49,8 +49,6 @@ impl Reader for ConceptXReader {
                     x.token = x.token.replace("##", "");
                     x.token = x.token.replace("Ġ", "");
                     x.token = x.token.replace("\\u0120", "");
-                    // to lower case
-                    x.token = x.token.to_lowercase();
                 });
                 activation
             })

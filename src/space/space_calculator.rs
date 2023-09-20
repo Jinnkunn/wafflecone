@@ -7,7 +7,7 @@ use crate::space::{SpaceCalculator, SpaceGenerator};
 #[pyclass]
 pub struct Calculator{
     pub(crate) bias: HashMap<String, HashMap<String, f64>>,
-    pub(crate) ideal_similarity: f64,
+    pub(crate) ideal_distance: f64,
 }
 
 impl SpaceCalculator for Calculator {
@@ -24,7 +24,7 @@ impl SpaceCalculator for Calculator {
 
         assert_eq!(ideal_center.len(), compare_space[0].get_center().len());
 
-        let ideal_similarity = cos_similarity(&compare_space[0].get_center(), &ideal_center);
+        let ideal_distance = distance(&compare_space[0].get_center(), &ideal_center);
 
         // calculate the normalized cosine similarity between one_compare_space_center and all
         let mut bias_dict: HashMap<String, HashMap<String, f64>> = HashMap::new();
@@ -35,7 +35,7 @@ impl SpaceCalculator for Calculator {
             // tokens in random_space
 
             let relationship = random_space.tokens.iter().map(|token| {
-                let bias = cos_similarity(&token.embedding, &one_compare_space_center) / ideal_similarity;
+                let bias = cos_similarity(&token.embedding, &one_compare_space_center) / ideal_distance;
                 (token.word.clone(), bias)
             }).collect::<HashMap<String, f64>>();
 
@@ -44,7 +44,7 @@ impl SpaceCalculator for Calculator {
 
         Calculator{
             bias: bias_dict,
-            ideal_similarity,
+            ideal_distance,
         }
     }
 
@@ -74,7 +74,7 @@ impl SpaceCalculator for Calculator {
     fn print(&self){
         // create a dictionary <String, f64> to store the bias
         println!("bias_dict: {:?}", self.bias);
-        println!("ideal_similarity: {:?}", self.ideal_similarity)
+        println!("ideal_distance: {:?}", self.ideal_distance)
     }
 }
 
@@ -89,6 +89,16 @@ pub fn cos_similarity(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
         norm2 += center2[i] * center2[i];
     }
     dot_product / (norm1.sqrt() * norm2.sqrt())
+}
+
+pub fn distance(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
+    // calculate the distance between two vectors
+    let mut distance: f64 = 0.0;
+    for i in 0..center1.len() {
+        distance += (center1[i] - center2[i]) * (center1[i] - center2[i]);
+    }
+    distance.sqrt()
+
 }
 
 #[pymethods]

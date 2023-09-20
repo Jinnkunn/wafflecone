@@ -103,8 +103,8 @@ mod test {
         let lines = reader.read("./test_data/conceptx.json", false);
         assert_eq!(lines.len(), 10);
         println!("{}", lines[0].tokens[0].word);
-        assert_eq!(lines[0].tokens[0].word, "[cls]0");
-        assert_eq!(lines[0].tokens[1].word, "new");
+        assert_eq!(lines[0].tokens[0].word, "[CLS]0");
+        assert_eq!(lines[0].tokens[1].word, "NEW");
         assert_eq!(lines[0].tokens[0].line_num, 0);
         assert_eq!(lines[0].tokens[0].position, 0);
     }
@@ -114,7 +114,7 @@ mod test {
         let reader = ConceptXReader::new();
         let lines = reader.read("./test_data/conceptx.json", false);
         assert_eq!(lines.len(), 10);
-        assert_eq!(lines[1].tokens[0].word, "[cls]1");
+        assert_eq!(lines[1].tokens[0].word, "[CLS]1");
         assert_eq!(lines[1].tokens[0].line_num, 1);
         assert_eq!(lines[1].tokens[0].position, 0);
     }

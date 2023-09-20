@@ -25,7 +25,7 @@ fn version() {
 #[pyfunction]
 fn calculator(path: &str,
               subspace_seeds: Vec<Vec<String>>,
-              random_token_num: Option<i64>, // number of random tokens
+              random_token_num: Option<f64>, // number of random tokens
               random_token_seed: Option<i64>, // random seed
               subspace_folder_path: Option<&str>, // folder path to save subspaces
               exclude_words: Option<Vec<String>>, // words to exclude from random tokens
@@ -39,8 +39,7 @@ fn calculator(path: &str,
     // select random tokens from the global space
     // then build a subspace with the random tokens
     let random_token = space.get_random_tokens(
-        // use 80% of the data as default
-        random_token_num.unwrap_or((data.len() as f64 * 0.8) as i64),
+        (data.len() as f64 * random_token_num.unwrap_or(0.8)) as i64,
         random_token_seed.unwrap_or(1),
         exclude_words
     );

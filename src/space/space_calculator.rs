@@ -35,7 +35,7 @@ impl SpaceCalculator for Calculator {
             // tokens in random_space
 
             let relationship = random_space.tokens.iter().map(|token| {
-                let bias = (cos_similarity(&token.embedding, &one_compare_space_center) - ideal_similarity) / ideal_similarity;
+                let bias = cos_similarity(&token.embedding, &one_compare_space_center) / ideal_similarity;
                 (token.word.clone(), bias)
             }).collect::<HashMap<String, f64>>();
 

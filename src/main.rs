@@ -52,8 +52,8 @@ fn main() {
 
     calculator.print();
 
-    let abs_sum_ave = calculator.bias_asb_sum_average();
-    let sum_ave = calculator.bias_sum_average();
+    let abs_sum_ave = calculator.bias_asb_sum_average_calculator();
+    let sum_ave = calculator.bias_sum_average_calculator();
 
     println!("abs_sum_ave: {:?}", abs_sum_ave);
     println!("sum_ave: {:?}", sum_ave);

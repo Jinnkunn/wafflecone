@@ -81,23 +81,37 @@ impl SpaceGenerator for Space {
 
 
 fn get_center(tokens: Vec<Token>) -> Vec<f64> {
-    let mut sum_of_embeddings: Vec<f64> = Vec::new();
-    for token in tokens.clone() {
-        if sum_of_embeddings.len() == 0 {
-            for embedding in token.embedding.clone() {
-                sum_of_embeddings.push(embedding);
-            }
-        } else {
-            for i in 0..sum_of_embeddings.len() {
-                sum_of_embeddings[i] += token.embedding[i];
-            }
+    // sort the embeddings
+    let mut embeddings: Vec<f64> = Vec::new();
+    for token in &tokens {
+        embeddings.push(token.embedding.iter().sum::<f64>());
+    }
+    embeddings.sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+    // calculate the quartiles
+    let q1 = embeddings[embeddings.len() / 4];
+    let q3 = embeddings[embeddings.len() * 3 / 4];
+    let iqr = q3 - q1;
+
+    // filter out the outliers
+    let mut filtered_embeddings: Vec<f64> = Vec::new();
+    for embedding in embeddings {
+        if embedding >= q1 - 1.5 * iqr && embedding <= q3 + 1.5 * iqr {
+            filtered_embeddings.push(embedding);
         }
     }
+
+    // calculate the center
     let mut center: Vec<f64> = Vec::new();
-    for embedding in sum_of_embeddings {
-        center.push(embedding / tokens.len() as f64);
+    for i in 0..tokens[0].embedding.len() {
+        let mut sum = 0.0;
+        for token in &tokens {
+            sum += token.embedding[i];
+        }
+        center.push(sum / tokens.len() as f64);
     }
     center
+
 }
 
 fn find(space_tokens: &Vec<Token>, passed_in_words: &Vec<String>) -> Vec<Token> {

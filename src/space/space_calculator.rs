@@ -7,7 +7,7 @@ use crate::space::{SpaceCalculator, SpaceGenerator};
 #[pyclass]
 pub struct Calculator{
     pub(crate) bias: HashMap<String, HashMap<String, f64>>,
-    pub(crate) ideal_similarity: f64,
+    pub(crate) ideal_similarity: HashMap<String, f64>, // space name: ideal similarity
 }
 
 impl SpaceCalculator for Calculator {
@@ -24,27 +24,25 @@ impl SpaceCalculator for Calculator {
 
         assert_eq!(ideal_center.len(), compare_space[0].get_center().len());
 
-//         let ideal_distance = distance(&compare_space[0].get_center(), &ideal_center);
-//         let ideal_distance2 = distance(&compare_space[1].get_center(), &ideal_center);
-//         assert_eq!(ideal_distance, ideal_distance2);
+        let mut ideal_similarities:HashMap<String, f64>  = HashMap::new();
 
-        let mut ideal_similarity = 0.0;
         for one_compare_space in compare_space.clone() {
             let one_compare_space_center = one_compare_space.get_center();
-            ideal_similarity += cos_similarity(&one_compare_space_center, &ideal_center);
+            let ideal_similarity = cos_similarity(&one_compare_space_center, &ideal_center);
+            ideal_similarities.insert(one_compare_space.space_name, ideal_similarity);
         }
-        ideal_similarity = ideal_similarity / compare_space.len() as f64;
 
         // calculate the normalized cosine similarity between one_compare_space_center and all
         let mut bias_dict: HashMap<String, HashMap<String, f64>> = HashMap::new();
 
         for one_compare_space in compare_space.clone() {
             let one_compare_space_center = one_compare_space.get_center();
-            // calculate the cosine similarity between one_compare_space_center and all
-            // tokens in random_space
+
+            // find the ideal similarity from ideal_similarities, which the space is one_compare_space
+            let target_similarity = ideal_similarities.get(&one_compare_space.space_name).unwrap();
 
             let relationship = random_space.tokens.iter().map(|token| {
-                let bias = cos_similarity(&token.embedding, &one_compare_space_center) / ideal_similarity;
+                let bias = cos_similarity(&token.embedding, &one_compare_space_center) / target_similarity;
                 (token.word.clone(), bias)
             }).collect::<HashMap<String, f64>>();
 
@@ -53,12 +51,12 @@ impl SpaceCalculator for Calculator {
 
         Calculator{
             bias: bias_dict,
-            ideal_similarity,
+            ideal_similarity: ideal_similarities,
         }
     }
 
 
-    fn bias_sum_average(&self) -> HashMap<String, f64> {
+    fn bias_sum_average_calculator(&self) -> HashMap<String, f64> {
         let mut bias_sum_average: HashMap<String, f64> = HashMap::new();
         for (space_name, relationship) in self.bias.iter() {
             // use each similarity - ideal_similarity
@@ -69,7 +67,7 @@ impl SpaceCalculator for Calculator {
         bias_sum_average
     }
 
-    fn bias_asb_sum_average(&self) -> HashMap<String, f64> {
+    fn bias_asb_sum_average_calculator(&self) -> HashMap<String, f64> {
         let mut bias_asb_sum_average: HashMap<String, f64> = HashMap::new();
         for (space_name, relationship) in self.bias.iter() {
             // use each similarity - ideal_similarity, get the absolute value
@@ -87,73 +85,38 @@ impl SpaceCalculator for Calculator {
     }
 }
 
-pub fn cos_similarity(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
+fn cos_similarity(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
+    assert_eq!(center1.len(), center2.len(), "center1 and center2 should have the same length");
     // calculate the cosine similarity between two vectors
+    let dot_product_result = dot_product(center1, center2);
+    let center1_norm = dot_product(center1, center1).sqrt();
+    let center2_norm = dot_product(center2, center2).sqrt();
+    dot_product_result / (center1_norm * center2_norm)
+
+}
+
+fn dot_product(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
+    // calculate the dot product between two vectors
     let mut dot_product: f64 = 0.0;
-    let mut norm1: f64 = 0.0;
-    let mut norm2: f64 = 0.0;
     for i in 0..center1.len() {
         dot_product += center1[i] * center2[i];
-        norm1 += center1[i] * center1[i];
-        norm2 += center2[i] * center2[i];
     }
-    dot_product / (norm1.sqrt() * norm2.sqrt())
+    dot_product
 }
 
-pub fn distance(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
-    // calculate the distance between two vectors
-    let mut distance: f64 = 0.0;
-    for i in 0..center1.len() {
-        distance += (center1[i] - center2[i]) * (center1[i] - center2[i]);
-    }
-    distance.sqrt()
 
-}
-
+// Expose to Python
 #[pymethods]
 impl Calculator {
-    fn bias_sum_average(&self) -> HashMap<String, f64> {
-        let mut bias_sum_average: HashMap<String, f64> = HashMap::new();
-        for (space_name, relationship) in self.bias.iter() {
-            let sum_average = relationship.iter().map(|(_, similarity)| similarity).sum::<f64>() / relationship.len() as f64;
-            bias_sum_average.insert(space_name.clone(), sum_average);
-        }
-        bias_sum_average
+    pub(crate) fn bias_sum_average(&self) -> HashMap<String, f64> {
+        self.bias_sum_average_calculator()
     }
 
-    fn bias_asb_sum_average(&self) -> HashMap<String, f64> {
-        let mut bias_asb_sum_average: HashMap<String, f64> = HashMap::new();
-        for (space_name, relationship) in self.bias.iter() {
-            let asb_sum_average = relationship.iter().map(|(_, similarity)| similarity.abs()).sum::<f64>() / relationship.len() as f64;
-            bias_asb_sum_average.insert(space_name.clone(), asb_sum_average);
-        }
-        bias_asb_sum_average
+    pub(crate) fn bias_asb_sum_average(&self) -> HashMap<String, f64> {
+        self.bias_asb_sum_average_calculator()
     }
 
-    fn bias_mse(&self) -> f64 {
-        let bias_sum_average = self.bias_sum_average();
-        // MSE of bias_sum_average
-        let mut bias: f64 = 0.0;
-        for (_, similarity) in bias_sum_average.iter() {
-            bias += similarity * similarity;
-        }
-        bias = bias / bias_sum_average.len() as f64;
-        bias
-    }
-
-    fn bias_mse_abs(&self) -> f64 {
-        let bias_sum_average = self.bias_asb_sum_average();
-        // MSE of bias_sum_average
-        let mut bias: f64 = 0.0;
-        for (_, similarity) in bias_sum_average.iter() {
-            bias += similarity * similarity;
-        }
-        bias = bias / bias_sum_average.len() as f64;
-        bias
-    }
-
-
-    fn save_summary(&self, path: Option<&str>) {
+    pub(crate) fn save_summary(&self, path: Option<&str>) {
         self.write(path.unwrap_or("./"), false);
     }
 }

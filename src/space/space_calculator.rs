@@ -29,6 +29,7 @@ impl SpaceCalculator for Calculator {
         for one_compare_space in compare_space.clone() {
             let one_compare_space_center = one_compare_space.get_center();
             let ideal_similarity = cos_similarity(&one_compare_space_center, &ideal_center);
+            // let ideal_similarity = 1.0;
             ideal_similarities.insert(one_compare_space.space_name, ideal_similarity);
         }
 

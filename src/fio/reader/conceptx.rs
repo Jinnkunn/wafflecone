@@ -49,6 +49,8 @@ impl Reader for ConceptXReader {
                     x.token = x.token.replace("##", "");
                     x.token = x.token.replace("Ġ", "");
                     x.token = x.token.replace("\\u0120", "");
+                    x.token = x.token.replace("▁", "");
+                    x.token = x.token.replace("\\u2581", "");
                 });
                 activation
             })

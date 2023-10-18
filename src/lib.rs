@@ -53,7 +53,10 @@ fn calculator(path: &str,
     // build subspaces with the tokens of interests. e.g., male or female
     let mut sub_spaces: Vec<Space> = Vec::new();
     for subspace_seed in subspace_seeds {
-        let sub_space = Space::new(space.find(&subspace_seed), Option::from(subspace_seed));
+        let sub_space = Space::new(
+            space.find(&subspace_seed),
+            Option::from(subspace_seed),
+        );
         sub_spaces.push(sub_space);
     }
 

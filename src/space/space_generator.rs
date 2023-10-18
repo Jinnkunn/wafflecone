@@ -15,6 +15,8 @@ pub struct Space {
 
 impl SpaceGenerator for Space {
     fn new<T: TokenOperators>(items: T, words_of_interests: Option<Vec<String>>) -> Space {
+        // assert!((words_of_interests.iter().len() > 0 && parent_space.iter().len() > 0) || (words_of_interests.iter().len() == 0 && parent_space.iter().len() == 0));
+
         let mut tokens: Vec<Token> = Vec::new();
         for item in items.get_all_tokens() {
             tokens.push(item);
@@ -27,7 +29,7 @@ impl SpaceGenerator for Space {
                         None => {"Global Space".to_string()}
                         Some(x) => {format!("Space of {}", x[0])}
                     },
-                    tokens,
+                    tokens: scale_tokens(tokens.clone()),
                     words_of_interests,
                 }
             },
@@ -49,6 +51,10 @@ impl SpaceGenerator for Space {
     /// Calculate the center of the space
     fn get_center(&self) -> Vec<f64> {
         get_center(self.tokens.clone())
+    }
+
+    fn get_std(&self) -> Vec<f64> {
+        get_std(self.tokens.clone())
     }
 
     /// Get random tokens from the space, which will be used to generate subspaces
@@ -77,6 +83,43 @@ impl SpaceGenerator for Space {
         println!("token of interest: {}", self.words_of_interests.clone().unwrap_or(vec![]).join(", "));
         println!("-----------------------");
     }
+}
+
+fn scale_tokens(tokens: Vec<Token>) -> Vec<Token> {
+    let center = get_center(tokens.clone());
+    let std = get_std(tokens.clone());
+    let mut scaled_tokens: Vec<Token> = Vec::new();
+    for token in tokens {
+        let mut scaled_embedding: Vec<f64> = Vec::new();
+        for i in 0..token.embedding.len() {
+            scaled_embedding.push((token.embedding[i] - center[i]) / std[i]);
+        }
+        scaled_tokens.push(Token {
+            word: token.word,
+            line_num: token.line_num,
+            position: token.position,
+            embedding: scaled_embedding,
+        });
+    }
+    scaled_tokens
+}
+
+fn get_std(tokens: Vec<Token>) -> Vec<f64> {
+    // calculate the stand deviation
+    let mut std: Vec<f64> = Vec::new();
+    for i in 0..tokens[0].embedding.len() {
+        let mut sum = 0.0;
+        for token in &tokens {
+            sum += token.embedding[i];
+        }
+        let mean = sum / tokens.len() as f64;
+        let mut sum_of_square = 0.0;
+        for token in &tokens {
+            sum_of_square += (token.embedding[i] - mean).powi(2);
+        }
+        std.push((sum_of_square / tokens.len() as f64).sqrt());
+    }
+    std
 }
 
 

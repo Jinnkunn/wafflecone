@@ -29,12 +29,13 @@ fn calculator(path: &str,
               random_token_seed: Option<i64>, // random seed
               subspace_folder_path: Option<&str>, // folder path to save subspaces
               exclude_words: Option<Vec<String>>, // words to exclude from random tokens
-              user_friendly: Option<bool>
+              user_friendly: Option<bool>,
+              pca_dimension: Option<usize>,
 ) -> Calculator {
     let data = ConceptXReader::new().read(path, user_friendly.unwrap_or(false));
 
     // Build the global space
-    let space = Space::new(data.clone(), None);
+    let space = Space::new(data.clone(), None, pca_dimension);
 
     // select random tokens from the global space
     // then build a subspace with the random tokens
@@ -47,7 +48,7 @@ fn calculator(path: &str,
     let subspace_folder = subspace_folder_path.unwrap_or("./");
 
     // save the random tokens to a file
-    let random_sub_space = Space::new(random_token.clone(), None);
+    let random_sub_space = Space::new(random_token.clone(), None, None);
     random_sub_space.write(format!("{}/random_subspace.txt", subspace_folder).as_str(), user_friendly.unwrap_or(false));
 
     // build subspaces with the tokens of interests. e.g., male or female
@@ -56,6 +57,7 @@ fn calculator(path: &str,
         let sub_space = Space::new(
             space.find(&subspace_seed),
             Option::from(subspace_seed),
+            None
         );
         sub_spaces.push(sub_space);
     }

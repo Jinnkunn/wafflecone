@@ -17,11 +17,11 @@ use crate::space::SpaceCalculator;
 
 fn main() {
     let data = ConceptXReader::new().read("./test_data/layer12.json", true);
-    let space = Space::new(data, None);
+    let space = Space::new(data, None, Some(512));
 
     let random_token = space.get_random_tokens(10, 1, None);
 
-    let random_sub_space = Space::new(random_token.clone(), None);
+    let random_sub_space = Space::new(random_token.clone(), None, None);
     random_sub_space.write("./random_subspace.txt", true);
 
     let male_words = vec![
@@ -29,7 +29,7 @@ fn main() {
         String::from("he"),
         String::from("boy")
     ];
-    let male_sub_space = Space::new(space.find(&male_words), Option::from(male_words));
+    let male_sub_space = Space::new(space.find(&male_words), Option::from(male_words), None);
     male_sub_space.print_summary();
     let male_center = male_sub_space.get_center();
 
@@ -38,7 +38,7 @@ fn main() {
         String::from("she"),
         String::from("girl")
     ];
-    let female_sub_space = Space::new(space.find(&female_words), Option::from(female_words));
+    let female_sub_space = Space::new(space.find(&female_words), Option::from(female_words), None);
     female_sub_space.print_summary();
     let female_center = female_sub_space.get_center();
 

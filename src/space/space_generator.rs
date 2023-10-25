@@ -16,7 +16,7 @@ pub struct Space {
 }
 
 impl SpaceGenerator for Space {
-    fn new<T: TokenOperators>(items: T, words_of_interests: Option<Vec<String>>) -> Space {
+    fn new<T: TokenOperators>(items: T, words_of_interests: Option<Vec<String>>, pca_dimension: Option<usize>) -> Space {
         // assert!((words_of_interests.iter().len() > 0 && parent_space.iter().len() > 0) || (words_of_interests.iter().len() == 0 && parent_space.iter().len() == 0));
 
         let mut tokens: Vec<Token> = Vec::new();
@@ -34,7 +34,7 @@ impl SpaceGenerator for Space {
                     },
                     tokens: match &words_of_interests {
                         None => {
-                            scale_tokens(pca(tokens))
+                            scale_tokens(pca(tokens, pca_dimension))
                         }
                         Some(_) => {tokens}
                     },
@@ -113,10 +113,16 @@ fn scale_tokens(tokens: Vec<Token>) -> Vec<Token> {
     scaled_tokens
 }
 
-fn pca(tokens: Vec<Token>) -> Vec<Token> {
+fn pca(tokens: Vec<Token>, pca_dimension: Option<usize>) -> Vec<Token> {
     // use PCA to do the dimension reduction.
     // reduce the demension to 512 by default
-    let mut pca_model = PCA::new(512);
+
+    let n_components = match pca_dimension {
+        None => {512}
+        Some(x) => {x}
+    };
+
+    let mut pca_model = PCA::new(n_components);
 
     let embeddings: DMatrix<f64> = DMatrix::from_rows(
         &tokens.iter()

@@ -7,7 +7,8 @@ def calculator(path: str,
               random_token_seed: int = None, # random seed
               subspace_folder_path: str = None, # folder path to save subspaces
               exclude_words: list[str] = None, # words to exclude from random tokens
-              user_friendly: bool = None) -> 'Calculator':
+              user_friendly: bool = None,
+              pca_dimension: int = None) -> 'Calculator':
     """Print the calculator."""
 
 

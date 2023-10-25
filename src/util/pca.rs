@@ -1,4 +1,5 @@
 use nalgebra::{DMatrix, RowDVector, SVD};
+use crate::util::progress_bar::ProgressBar;
 
 pub struct PCA {
     mean: Vec<f64>,
@@ -26,10 +27,17 @@ impl PCA {
 
         let mean_vector = RowDVector::from_vec(self.mean.clone());
 
+        let mut pb = ProgressBar::new(n_samples as u64, "PCA Fit", true);
+
         // Subtract the mean from each row
         let x_centered: Vec<RowDVector<f64>> = x.row_iter()
-            .map(|row| row - &mean_vector)
+            .map(|row| {
+                pb.inc(1);
+                row - &mean_vector
+            })
             .collect();
+
+        pb.finish();
 
         // Convert the Vec<RowDVector<f64>> to DMatrix<f64>
         let x_centered = DMatrix::from_rows(&x_centered);
@@ -48,10 +56,15 @@ impl PCA {
 
 
     pub fn transform(&self, x: DMatrix<f64>) -> DMatrix<f64> {
+        let mut pb = ProgressBar::new(x.nrows() as u64, "PCA Transform", true);
         let mean_vector = RowDVector::from_vec(self.mean.clone());
         let rows: Vec<_> = x.row_iter()
-            .map(|row| row - &mean_vector)
+            .map(|row| {
+                pb.inc(1);
+                row - &mean_vector
+            })
             .collect();
+        pb.finish();
         let x_centered = DMatrix::from_rows(&rows);
         x_centered * &self.components
     }

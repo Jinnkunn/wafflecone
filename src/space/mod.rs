@@ -6,7 +6,7 @@ pub mod space_generator;
 pub mod space_calculator;
 
 pub trait SpaceGenerator {
-    fn new<T: TokenOperators>(tokens: T, words_of_interests: Option<Vec<String>>) -> Self;
+    fn new<T: TokenOperators>(tokens: T, words_of_interests: Option<Vec<String>>, pca_dimension: Option<usize>) -> Self;
     fn set_space_name(&mut self, name: String);
     fn find(&self, words_of_interests: &Vec<String>) -> Vec<Token>;
     fn get_center(&self) -> Vec<f64>;

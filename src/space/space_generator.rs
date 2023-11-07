@@ -34,7 +34,7 @@ impl SpaceGenerator for Space {
                     },
                     tokens: match &words_of_interests {
                         None => {
-                            scale_tokens(pca(tokens, pca_dimension))
+                            pca(tokens, pca_dimension)
                         }
                         Some(_) => {tokens}
                     },
@@ -93,32 +93,32 @@ impl SpaceGenerator for Space {
     }
 }
 
-fn scale_tokens(tokens: Vec<Token>) -> Vec<Token> {
-    // z-score normalization
-    let center = get_center(tokens.clone());
-    let std = get_std(tokens.clone());
-    let mut scaled_tokens: Vec<Token> = Vec::new();
-    for token in tokens {
-        let mut scaled_embedding: Vec<f64> = Vec::new();
-        for i in 0..token.embedding.len() {
-            scaled_embedding.push((token.embedding[i] - center[i]) / std[i]);
-        }
-        scaled_tokens.push(Token {
-            word: token.word,
-            line_num: token.line_num,
-            position: token.position,
-            embedding: scaled_embedding,
-        });
-    }
-    scaled_tokens
-}
-
+// fn scale_tokens(tokens: Vec<Token>) -> Vec<Token> {
+//     // z-score normalization
+//     let center = get_center(tokens.clone());
+//     let std = get_std(tokens.clone());
+//     let mut scaled_tokens: Vec<Token> = Vec::new();
+//     for token in tokens {
+//         let mut scaled_embedding: Vec<f64> = Vec::new();
+//         for i in 0..token.embedding.len() {
+//             scaled_embedding.push((token.embedding[i] - center[i]) / std[i]);
+//         }
+//         scaled_tokens.push(Token {
+//             word: token.word,
+//             line_num: token.line_num,
+//             position: token.position,
+//             embedding: scaled_embedding,
+//         });
+//     }
+//     scaled_tokens
+// }
+//
 fn pca(tokens: Vec<Token>, pca_dimension: Option<usize>) -> Vec<Token> {
     // use PCA to do the dimension reduction.
     // reduce the demension to 512 by default
 
     let n_components = match pca_dimension {
-        None => {512}
+        None => {return tokens}
         Some(x) => {x}
     };
 

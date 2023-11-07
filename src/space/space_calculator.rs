@@ -29,9 +29,10 @@ impl SpaceCalculator for Calculator {
         for one_compare_space in compare_space.clone() {
             let one_compare_space_center = one_compare_space.get_center();
             let ideal_similarity = cos_similarity(&one_compare_space_center, &ideal_center);
-            // let ideal_similarity = 1.0;
             ideal_similarities.insert(one_compare_space.space_name, ideal_similarity);
         }
+
+        println!("ideal_similarity: {:?}", ideal_similarities);
 
         // calculate the normalized cosine similarity between one_compare_space_center and all
         let mut bias_dict: HashMap<String, HashMap<String, f64>> = HashMap::new();
@@ -43,7 +44,7 @@ impl SpaceCalculator for Calculator {
             let target_similarity = ideal_similarities.get(&one_compare_space.space_name).unwrap();
 
             let relationship = random_space.tokens.iter().map(|token| {
-                let bias = cos_similarity(&token.embedding, &one_compare_space_center) / target_similarity;
+                let bias = (cos_similarity(&token.embedding, &one_compare_space_center) - target_similarity) / target_similarity;
                 (token.word.clone(), bias)
             }).collect::<HashMap<String, f64>>();
 

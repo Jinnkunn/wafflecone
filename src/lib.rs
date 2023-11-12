@@ -63,7 +63,7 @@ fn calculator(path: &str,
     }
 
     // compute the bias of the random subspace
-    let calculator = Calculator::new(random_sub_space, sub_spaces);
+    let calculator = Calculator::new(random_sub_space, sub_spaces, space);
 
     calculator
 

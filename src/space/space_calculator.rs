@@ -38,8 +38,8 @@ impl SpaceCalculator for Calculator {
             for one_random_token in random_space.tokens.iter() {
                 let one_random_token_embedding = &one_random_token.embedding;
                 let similarity = cos_similarity(&one_compare_space_center, one_random_token_embedding);
-                relationship.insert(one_random_token.word.clone(), similarity - target_similarity);
-                relationship_normalized.insert(one_random_token.word.clone(), (similarity - target_similarity) / average_similarity);
+                relationship.insert(format!("{}:{}:{}", one_random_token.word.clone(), one_random_token.position, one_random_token.line_num), similarity - target_similarity);
+                relationship_normalized.insert(format!("{}:{}:{}", one_random_token.word.clone(), one_random_token.position, one_random_token.line_num), (similarity - target_similarity) / average_similarity);
             }
 
             bias_dict.insert(one_compare_space.space_name.clone(), relationship);
@@ -193,6 +193,42 @@ impl Calculator {
             println!("use bias");
             self.bias_asb_sum_average_calculator()
         }
+    }
+
+     pub(crate) fn get_all_bias(&self) -> Vec<HashMap<String, HashMap<String, f64>>> {
+        let mut bias: Vec<HashMap<String, HashMap<String, f64>>> = Vec::new();
+        bias.push(self.bias.clone());
+        bias.push(self.bias_normalized.clone());
+
+        bias
+    }
+
+    pub(crate) fn get_all_bias_value(&self) -> Vec<HashMap<String, Vec<f64>>> {
+        let mut bias: Vec<HashMap<String, Vec<f64>>> = Vec::new();
+        let mut bias_dict: HashMap<String, Vec<f64>> = HashMap::new();
+        let mut bias_normalized_dict: HashMap<String, Vec<f64>> = HashMap::new();
+
+        for (space_name, bias_value) in self.bias.iter() {
+            let mut bias_value_vec: Vec<f64> = Vec::new();
+            for (_, value) in bias_value.iter() {
+                bias_value_vec.push(*value);
+            }
+            bias_dict.insert(space_name.clone(), bias_value_vec);
+        }
+
+        for (space_name, bias_normalized_value) in self.bias_normalized.iter() {
+            let mut bias_normalized_value_vec: Vec<f64> = Vec::new();
+            for (_, value) in bias_normalized_value.iter() {
+                bias_normalized_value_vec.push(*value);
+            }
+            bias_normalized_dict.insert(space_name.clone(), bias_normalized_value_vec);
+        }
+
+        bias.push(bias_dict);
+        bias.push(bias_normalized_dict);
+
+        bias
+
     }
 
     pub(crate) fn save_summary(&self, path: Option<&str>) {

@@ -37,12 +37,18 @@ fn calculator(path: &str,
     // Build the global space
     let space = Space::new(data.clone(), None, pca_dimension);
 
+    // all words need to be excluded: exclude_words + subspace_seeds
+    let mut exclude_words = exclude_words.unwrap_or(Vec::new());
+    for subspace_seed in &subspace_seeds {
+        exclude_words.extend(subspace_seed.clone());
+    }
+
     // select random tokens from the global space
     // then build a subspace with the random tokens
     let random_token = space.get_random_tokens(
         (data.len() as f64 * random_token_num.unwrap_or(0.8)) as i64,
         random_token_seed.unwrap_or(1),
-        exclude_words
+        Some(exclude_words)
     );
 
     let subspace_folder = subspace_folder_path.unwrap_or("./");

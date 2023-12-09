@@ -122,6 +122,12 @@ fn pca(tokens: Vec<Token>, pca_dimension: Option<usize>) -> Vec<Token> {
         Some(x) => {x}
     };
 
+    println!("The number of embedding is {}", tokens[0].embedding.len());
+    if tokens[0].embedding.len() <= n_components {
+        println!("The number of tokens is less than the number of components, so PCA is not applied.");
+        return tokens;
+    }
+
     let mut pca_model = PCA::new(n_components);
 
     let embeddings: DMatrix<f64> = DMatrix::from_rows(
@@ -212,7 +218,6 @@ fn find(space_tokens: &Vec<Token>, passed_in_words: &Vec<String>) -> Vec<Token> 
 
 fn get_random_tokens(tokens: Vec<Token>, num: i64, random_seed: i64, exclude: Option<Vec<String>>) -> Vec<Token> {
     let total_tokens = tokens.len();
-
     let mut random_tokens: Vec<Token> = Vec::new();
     // set random seed, get random tokens without replacement
     let mut rng = ChaCha8Rng::seed_from_u64(random_seed as u64);

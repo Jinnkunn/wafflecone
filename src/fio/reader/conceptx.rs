@@ -67,16 +67,18 @@ fn converter(activations: Vec<LineConceptX>) -> Vec<Line> {
     let mut pb_tokenlize = ProgressBar::new(activations.len() as u64, constant::TOKEN_GENERATING, true);
     for line in activations {
         let mut tokens: Vec<Token> = Vec::new();
-        for feature in line.features {
+        for feature_index in 0..line.features.len() {
+            let feature = line.features[feature_index].clone();
             for token in feature.layers {
                 tokens.push(Token {
                     word: String::from(&feature.token),
                     line_num: line.linex_index,
-                    position: token.index,
+                    position: feature_index,
                     embedding: token.values,
                 });
             }
         }
+        assert_eq!(tokens.len(), line.features.len());
         lines.push(Line {
             tokens,
             line_num: line.linex_index,

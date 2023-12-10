@@ -38,8 +38,8 @@ impl SpaceCalculator for Calculator {
             for one_random_token in random_space.tokens.iter() {
                 let one_random_token_embedding = &one_random_token.embedding;
                 let similarity = cos_similarity(&one_compare_space_center, one_random_token_embedding);
-                relationship.insert(format!("{}:{}:{}", one_random_token.word.clone(), one_random_token.position, one_random_token.line_num), similarity - target_similarity);
-                relationship_normalized.insert(format!("{}:{}:{}", one_random_token.word.clone(), one_random_token.position, one_random_token.line_num), (similarity - target_similarity) / average_similarity);
+                relationship.insert(format!("{}:{}:{}", one_random_token.word.clone(), one_random_token.line_num, one_random_token.position), similarity - target_similarity);
+                relationship_normalized.insert(format!("{}:{}:{}", one_random_token.word.clone(), one_random_token.line_num, one_random_token.position), (similarity - target_similarity) / average_similarity);
             }
 
             bias_dict.insert(one_compare_space.space_name.clone(), relationship);

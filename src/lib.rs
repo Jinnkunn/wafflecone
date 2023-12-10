@@ -34,6 +34,12 @@ fn calculator(path: &str,
 ) -> Calculator {
     let data = ConceptXReader::new().read(path, user_friendly.unwrap_or(false));
 
+    let mut num_of_tokens = 0;
+    for line in &data {
+        num_of_tokens += line.tokens.len();
+    }
+    println!("Total number of tokens: {}", num_of_tokens);
+
     // Build the global space
     let space = Space::new(data.clone(), None, pca_dimension);
 
@@ -46,7 +52,7 @@ fn calculator(path: &str,
     // select random tokens from the global space
     // then build a subspace with the random tokens
     let random_token = space.get_random_tokens(
-        (data.len() as f64 * random_token_num.unwrap_or(0.8)) as i64,
+        (num_of_tokens as f64 * random_token_num.unwrap_or(0.8)) as i64,
         random_token_seed.unwrap_or(1),
         Some(exclude_words)
     );

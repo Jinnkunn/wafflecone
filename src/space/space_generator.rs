@@ -142,12 +142,12 @@ fn pca(tokens: Vec<Token>, pca_dimension: Option<usize>) -> Vec<Token> {
 
     let mut updated_tokens: Vec<Token> = Vec::new();
     for (i, token) in tokens.iter().enumerate() {
-        updated_tokens.push(Token {
-            word: token.word.clone(),
-            line_num: token.line_num,
-            position: token.position,
-            embedding: transformed_embeddings.row(i).iter().cloned().collect(),
-        });
+        updated_tokens.push(Token::new(
+            token.word.clone(),
+            token.line_num,
+            token.position,
+            transformed_embeddings.row(i).iter().cloned().collect(),
+        ));
     }
 
     updated_tokens

@@ -70,12 +70,12 @@ fn converter(activations: Vec<LineConceptX>) -> Vec<Line> {
         for feature_index in 0..line.features.len() {
             let feature = line.features[feature_index].clone();
             for token in feature.layers {
-                tokens.push(Token {
-                    word: String::from(&feature.token),
-                    line_num: line.linex_index,
-                    position: feature_index,
-                    embedding: token.values,
-                });
+                tokens.push(Token::new(
+                    String::from(&feature.token),
+                    line.linex_index,
+                    feature_index,
+                    token.values,
+                ));
             }
         }
         assert_eq!(tokens.len(), line.features.len());

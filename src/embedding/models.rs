@@ -10,6 +10,19 @@ pub struct Token {
     pub position: usize,
     pub line_num: usize,
     pub embedding: Vec<f64>,
+    pub token_id: String,
+}
+
+impl Token{
+    pub fn new(word: String, position: usize, line_num: usize, embedding: Vec<f64>) -> Self {
+        Token {
+            word: word.clone(),
+            position: position,
+            line_num: line_num,
+            embedding: embedding,
+            token_id: format!("{}:{}:{}", word, position, line_num),
+        }
+    }
 }
 
 

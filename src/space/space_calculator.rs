@@ -6,135 +6,83 @@ use crate::space::{SpaceCalculator, SpaceGenerator};
 
 #[pyclass]
 pub struct Calculator{
-    pub(crate) bias: HashMap<String, HashMap<String, f64>>,
-    pub(crate) bias_normalized: HashMap<String, HashMap<String, f64>>,
-    pub(crate) ideal_similarity: HashMap<String, f64>, // space name: ideal similarity
-    pub(crate) average_similarity: f64, // average similarity of all spaces, will be used to normalize the bias
+    pub(crate) similarity: HashMap<String, HashMap<String, f64>>,
+    pub(crate) similarity_softmax : HashMap<String, HashMap<String, f64>>,
 }
 
 impl SpaceCalculator for Calculator {
-    fn new(random_space: Space, compare_space: Vec<Space>, whole_space: Space) -> Calculator {
+    fn new(random_space: Space, compare_space: Vec<Space>) -> Calculator {
         // e.g., random space is the space without all the gender words
         // compare space is a list of space which only contains the gender words
         assert!(compare_space.len() > 0, "compare_space should have at least one space");
 
-        let ideal_center = find_ideal_center(&compare_space);
-        let ideal_similarities = find_ideal_similarity(&compare_space, &ideal_center);
-//         let ideal_similarities = find_ideal_similarity(&random_space, &ideal_center);
-        let average_similarity = find_average_similarity(&ideal_center, whole_space);
-
-        // calculate the normalized cosine similarity between one_compare_space_center and all
-        let mut bias_dict: HashMap<String, HashMap<String, f64>> = HashMap::new();
-        let mut bias_normalized_dict: HashMap<String, HashMap<String, f64>> = HashMap::new();
+        let mut similarity_dict: HashMap<String, HashMap<String, f64>> = HashMap::new();
 
         for one_compare_space in compare_space.clone() {
             let one_compare_space_center = one_compare_space.get_center();
 
             // find the ideal similarity from ideal_similarities, which the space is one_compare_space
-            let target_similarity = ideal_similarities.get(&one_compare_space.space_name).unwrap();
-
             let mut relationship: HashMap<String, f64> = HashMap::new();
-            let mut relationship_normalized: HashMap<String, f64> = HashMap::new();
 
             for one_random_token in random_space.tokens.iter() {
-//                 let target_similarity = ideal_similarities.get(&one_random_token.token_id).unwrap();
                 let one_random_token_embedding = &one_random_token.embedding;
                 let similarity = cos_similarity(&one_compare_space_center, one_random_token_embedding);
-                relationship.insert(one_random_token.token_id.clone(), similarity - target_similarity);
-                relationship_normalized.insert(one_random_token.token_id.clone(), (similarity - target_similarity) / average_similarity);
+                relationship.insert(one_random_token.token_id.clone(), similarity);
             }
 
-            bias_dict.insert(one_compare_space.space_name.clone(), relationship);
-            bias_normalized_dict.insert(one_compare_space.space_name, relationship_normalized);
+            similarity_dict.insert(one_compare_space.space_name.clone(), relationship);
         }
 
         Calculator{
-            bias: bias_dict,
-            bias_normalized: bias_normalized_dict,
-            ideal_similarity: ideal_similarities,
-            average_similarity: average_similarity,
+            similarity: similarity_dict.clone(),
+            similarity_softmax: get_similarity_softmax(&similarity_dict),
         }
     }
 
-
-//     fn bias_sum_average_calculator(&self) -> HashMap<String, f64> {
-//         let mut bias_sum_average: HashMap<String, f64> = HashMap::new();
-//         for (space_name, relationship) in self.bias.iter() {
-//             // use each similarity - ideal_similarity
-//             // then add them together
-//             let sum_average = relationship.iter().map(|(_, similarity)| similarity).sum::<f64>() / relationship.len() as f64;
-//             bias_sum_average.insert(space_name.clone(), sum_average);
-//         }
-//         bias_sum_average
-//     }
-//
-//     fn bias_asb_sum_average_calculator(&self) -> HashMap<String, f64> {
-//         let mut bias_asb_sum_average: HashMap<String, f64> = HashMap::new();
-//         for (space_name, relationship) in self.bias.iter() {
-//             // use each similarity - ideal_similarity, get the absolute value
-//             // then add them together
-//             let asb_sum_average = relationship.iter().map(|(_, similarity)| similarity.abs()).sum::<f64>() / relationship.len() as f64;
-//             bias_asb_sum_average.insert(space_name.clone(), asb_sum_average);
-//         }
-//         bias_asb_sum_average
-//     }
-//
-//     fn bias_normalized_sum_average_calculator(&self) -> HashMap<String, f64> {
-//         let mut bias_sum_average: HashMap<String, f64> = HashMap::new();
-//         for (space_name, relationship_normalized) in self.bias_normalized.iter() {
-//             // use each similarity - ideal_similarity
-//             // then add them together
-//             let sum_average = relationship_normalized.iter().map(|(_, similarity)| similarity).sum::<f64>() / relationship_normalized.len() as f64;
-//             bias_sum_average.insert(space_name.clone(), sum_average);
-//         }
-//         bias_sum_average
-//     }
-//
-//     fn bias_normalized_asb_sum_average_calculator(&self) -> HashMap<String, f64> {
-//         let mut bias_asb_sum_average: HashMap<String, f64> = HashMap::new();
-//         for (space_name, relationship_normalized) in self.bias_normalized.iter() {
-//             // use each similarity - ideal_similarity, get the absolute value
-//             // then find the standard deviation
-//             let asb_sum_average = relationship_normalized.iter().map(|(_, similarity)| similarity.abs()).sum::<f64>() / relationship_normalized.len() as f64;
-//             bias_asb_sum_average.insert(space_name.clone(), asb_sum_average);
-//         }
-//         bias_asb_sum_average
-//     }
-
-    fn normalized_bias_calculator(&self) -> HashMap<String, f64> {
-        let mut normalized_bias: HashMap<String, f64> = HashMap::new();
-        for (space_name, relationship_normalized) in self.bias_normalized.iter() {
-            // use each similarity - ideal_similarity, get the absolute value
-            // then find the standard deviation
-            let mean = relationship_normalized.iter().map(|(_, similarity)| similarity.abs()).sum::<f64>() / relationship_normalized.len() as f64;
-
-            normalized_bias.insert(space_name.clone(), mean);
+    fn get_bias_result(&self, normalized: Option<bool>) -> HashMap<String, f64> {
+        if normalized.unwrap_or(true) {
+            get_entropy(&self.similarity_softmax)
+        } else {
+            get_entropy(&self.similarity)
         }
-        normalized_bias
     }
 
-
-    fn bias_calculator(&self) -> HashMap<String, f64> {
-        let mut bias: HashMap<String, f64> = HashMap::new();
-        for (space_name, relationship) in self.bias.iter() {
-            // use each similarity - ideal_similarity, get the absolute value
-            // then find the standard deviation
+    // One space, one similarity
+    fn get_normalized_similarity_summary(&self) -> HashMap<String, f64> {
+        let mut similarity: HashMap<String, f64> = HashMap::new();
+        for (space_name, relationship) in self.similarity.iter() {
             let mean = relationship.iter().map(|(_, similarity)| similarity.abs()).sum::<f64>() / relationship.len() as f64;
-
-            bias.insert(space_name.clone(), mean);
+            similarity.insert(space_name.clone(), mean);
         }
-        bias
+        similarity
     }
 
-
+    fn get_similarity_summary(&self) -> HashMap<String, f64> {
+        let mut similarity: HashMap<String, f64> = HashMap::new();
+        for (space_name, relationship) in self.similarity.iter() {
+            let mean = relationship.iter().map(|(_, similarity)| similarity.abs()).sum::<f64>() / relationship.len() as f64;
+            similarity.insert(space_name.clone(), mean);
+        }
+        similarity
+    }
 
     fn print(&self){
-        // create a dictionary <String, f64> to store the bias
-        println!("bias_dict: {:?}", self.bias);
-        println!("bias_normalized_dict: {:?}", self.bias_normalized);
-        println!("ideal_similarity: {:?}", self.ideal_similarity);
-        println!("average_similarity: {:?}", self.average_similarity);
+        println!("similarity_dict: {:?}", self.similarity);
     }
+}
+
+fn get_similarity_softmax(similarity_dict: &HashMap<String, HashMap<String, f64>>) -> HashMap<String, HashMap<String, f64>> {
+    let mut similarity_softmax: HashMap<String, HashMap<String, f64>> = HashMap::new();
+    let exp_sum: f64 = similarity_dict.iter().map(|(_, relationship)| relationship.iter().map(|(_, similarity)| similarity.exp()).sum::<f64>()).sum();
+
+    for (space_name, relationship) in similarity_dict.iter() {
+        let mut relationship_softmax: HashMap<String, f64> = HashMap::new();
+        for (token, similarity) in relationship.iter() {
+            relationship_softmax.insert(token.clone(), similarity.exp() / exp_sum);
+        }
+        similarity_softmax.insert(space_name.clone(), relationship_softmax);
+    }
+    similarity_softmax
 }
 
 fn cos_similarity(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
@@ -156,111 +104,31 @@ fn dot_product(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
     dot_product
 }
 
-fn find_ideal_center(compare_space: &Vec<Space>) -> Vec<f64> {
-    let mut ideal_center: Vec<f64> = vec![0.0; compare_space[0].get_center().len()];
-
-    for one_compare_space in compare_space{
-        let one_compare_space_center = one_compare_space.get_center();
-        ideal_center = ideal_center.iter().zip(one_compare_space_center.iter()).map(|(a, b)| a + b).collect();
+fn get_entropy(similarity_dict: &HashMap<String, HashMap<String, f64>>) -> HashMap<String, f64> {
+    let mut entropy: HashMap<String, f64> = HashMap::new();
+    for (space_name, relationship) in similarity_dict.iter() {
+        let mut entropy_sum: f64 = 0.0;
+        for (_, similarity) in relationship.iter() {
+            entropy_sum += similarity * similarity.log2();
+        }
+        entropy.insert(space_name.clone(), -entropy_sum);
     }
-    ideal_center = ideal_center.iter().map(|a| a / compare_space.len() as f64).collect();
-
-    assert_eq!(ideal_center.len(), compare_space[0].get_center().len());
-    ideal_center
-}
-
-fn find_ideal_similarity(compare_space: &Vec<Space>, ideal_center: &Vec<f64>) -> HashMap<String, f64>{
-    let mut ideal_similarities:HashMap<String, f64>  = HashMap::new();
-
-    for one_compare_space in compare_space {
-        let one_compare_space_center = one_compare_space.get_center();
-        let ideal_similarity = cos_similarity(&one_compare_space_center, ideal_center);
-        ideal_similarities.insert(one_compare_space.space_name.clone(), ideal_similarity);
-    }
-
-    println!("ideal_similarity: {:?}", ideal_similarities);
-
-    ideal_similarities
-}
-
-fn find_average_similarity(ideal_center: &Vec<f64>, whole_space: Space) -> f64 {
-    // find all the similarity between ideal_center and all the tokens in whole_space
-    let mut similarities: Vec<f64> = Vec::new();
-    for one_token in whole_space.tokens.iter() {
-        let one_token = &one_token.embedding;
-        let similarity = cos_similarity(&ideal_center, one_token);
-        similarities.push(similarity);
-    }
-
-    // find the average similarity
-    let average_similarity = similarities.iter().sum::<f64>() / similarities.len() as f64;
-    println!("average_similarity: {:?}", average_similarity);
-    average_similarity
-
+    entropy
 }
 
 // Expose to Python
 #[pymethods]
 impl Calculator {
-//     pub(crate) fn avg_bias(&self, normalize: Option<bool>) -> HashMap<String, f64> {
-//         // if normalize is true, or normalize is None, then use normalized bias
-//         if normalize.unwrap_or(true) {
-//             println!("use normalized bias");
-//             self.bias_normalized_sum_average_calculator()
-//         } else {
-//             println!("use bias");
-//             self.bias_sum_average_calculator()
-//         }
-//     }
-
     pub(crate) fn get_bias(&self, normalize: Option<bool>) -> HashMap<String, f64> {
-        // if normalize is true, or normalize is None, then use normalized bias
+        // if normalize is true, or normalize is None, then use normalized similarity
         if normalize.unwrap_or(true) {
-            println!("use normalized bias");
-            self.normalized_bias_calculator()
+            println!("use normalized similarity");
+            self.get_bias_result(Option::from(true))
         } else {
-            println!("use bias");
-            self.bias_calculator()
+            println!("use similarity");
+            self.get_bias_result(Option::from(false))
         }
     }
-
-     pub(crate) fn get_all_bias(&self, normalize: Option<bool>) -> HashMap<String, HashMap<String, f64>> {
-        if normalize.unwrap_or(true) {
-            println!("use normalized bias");
-            self.bias_normalized.clone()
-        } else {
-            println!("use bias");
-           self.bias.clone()
-        }
-    }
-
-//     pub(crate) fn get_all_bias_value(&self) -> Vec<HashMap<String, Vec<f64>>> {
-//         let mut bias: Vec<HashMap<String, Vec<f64>>> = Vec::new();
-//         let mut bias_dict: HashMap<String, Vec<f64>> = HashMap::new();
-//         let mut bias_normalized_dict: HashMap<String, Vec<f64>> = HashMap::new();
-//
-//         for (space_name, bias_value) in self.bias.iter() {
-//             let mut bias_value_vec: Vec<f64> = Vec::new();
-//             for (_, value) in bias_value.iter() {
-//                 bias_value_vec.push(*value);
-//             }
-//             bias_dict.insert(space_name.clone(), bias_value_vec);
-//         }
-//
-//         for (space_name, bias_normalized_value) in self.bias_normalized.iter() {
-//             let mut bias_normalized_value_vec: Vec<f64> = Vec::new();
-//             for (_, value) in bias_normalized_value.iter() {
-//                 bias_normalized_value_vec.push(*value);
-//             }
-//             bias_normalized_dict.insert(space_name.clone(), bias_normalized_value_vec);
-//         }
-//
-//         bias.push(bias_dict);
-//         bias.push(bias_normalized_dict);
-//
-//         bias
-//
-//     }
 
     pub(crate) fn save_summary(&self, path: Option<&str>) {
         self.write(path.unwrap_or("./"), false);

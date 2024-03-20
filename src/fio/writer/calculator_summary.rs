@@ -1,7 +1,7 @@
 use std::fs::OpenOptions;
 use std::io::Write;
 use crate::fio::writer::WriterOperator;
-use crate::space::space_calculator::Calculator;
+use crate::Calculator;
 
 impl WriterOperator for Calculator {
     fn write(&self, path: &str, _if_show: bool) {
@@ -12,6 +12,6 @@ impl WriterOperator for Calculator {
             .unwrap();
 
         // todo: format the output
-        file.write_all(format!("ideal_similarity: {:?}\n", self.bias).as_bytes()).unwrap();
+        file.write_all(format!("ideal_similarity: {:?}\n", self.get_bias(Option::from(true))).as_bytes()).unwrap();
     }
 }

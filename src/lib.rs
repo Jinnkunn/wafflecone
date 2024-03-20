@@ -16,15 +16,23 @@ use crate::fio::writer::WriterOperator;
 use crate::space::space_generator::Space;
 use crate::space::space_calculator::Calculator;
 use crate::space::SpaceCalculator;
+use crate::space::seeds::SubspaceSeeds;
 
 #[pyfunction]
 fn version() {
     println!("Wafflecone version: {}", env!("CARGO_PKG_VERSION"));
 }
 
+
+#[allow(non_snake_case)]
+#[pyfunction]
+fn new_subspace_seeds(name: String, seeds: Vec<String>) -> SubspaceSeeds {
+    SubspaceSeeds::new(name, seeds)
+}
+
 #[pyfunction]
 fn calculator(path: &str,
-              subspace_seeds: Vec<Vec<String>>,
+              subspace_seeds: Vec<SubspaceSeeds>,
               random_token_num: Option<f64>, // number of random tokens
               random_token_seed: Option<i64>, // random seed
               subspace_folder_path: Option<&str>, // folder path to save subspaces
@@ -33,6 +41,9 @@ fn calculator(path: &str,
               pca_dimension: Option<usize>,
 ) -> Calculator {
     let data = ConceptXReader::new().read(path, user_friendly.unwrap_or(false));
+
+    // turn each item of subspace_seed into raw format
+    println!("Subspace seeds: {:?}", subspace_seeds);
 
     let mut num_of_tokens = 0;
     for line in &data {
@@ -46,7 +57,7 @@ fn calculator(path: &str,
     // all words need to be excluded: exclude_words + subspace_seeds
     let mut exclude_words = exclude_words.unwrap_or(Vec::new());
     for subspace_seed in &subspace_seeds {
-        exclude_words.extend(subspace_seed.clone());
+        exclude_words.extend(subspace_seed.seeds.clone());
     }
 
     // select random tokens from the global space
@@ -65,17 +76,18 @@ fn calculator(path: &str,
 
     // build subspaces with the tokens of interests. e.g., male or female
     let mut sub_spaces: Vec<Space> = Vec::new();
+
     for subspace_seed in subspace_seeds {
         let sub_space = Space::new(
-            space.find(&subspace_seed),
-            Option::from(subspace_seed),
+            space.find(&subspace_seed.seeds),
+            Some(subspace_seed),
             None
         );
         sub_spaces.push(sub_space);
     }
 
     // compute the bias of the random subspace
-    let calculator = Calculator::new(random_sub_space, sub_spaces, space);
+    let calculator = Calculator::new(random_sub_space, sub_spaces);
 
     calculator
 
@@ -92,5 +104,7 @@ fn wafflecone(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(version, m)?)?;
     m.add_function(wrap_pyfunction!(calculator, m)?)?;
     m.add_function(wrap_pyfunction!(visualize, m)?)?;
+    m.add_function(wrap_pyfunction!(new_subspace_seeds, m)?)?;
+    m.add_class::<SubspaceSeeds>()?;
     Ok(())
 }

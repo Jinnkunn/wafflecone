@@ -3,6 +3,7 @@ use crate::embedding::models::TokenOperators;
 use crate::embedding::models::Token;
 use super::SpaceGenerator;
 use crate::util::pca::PCA;
+use crate::space::SubspaceSeeds;
 
 use rand_chacha::ChaCha8Rng;
 use rand::prelude::*;
@@ -16,21 +17,19 @@ pub struct Space {
 }
 
 impl SpaceGenerator for Space {
-    fn new<T: TokenOperators>(items: T, words_of_interests: Option<Vec<String>>, pca_dimension: Option<usize>) -> Space {
+    fn new<T: TokenOperators>(items: T, words_of_interests: Option<SubspaceSeeds>, pca_dimension: Option<usize>) -> Space {
         // assert!((words_of_interests.iter().len() > 0 && parent_space.iter().len() > 0) || (words_of_interests.iter().len() == 0 && parent_space.iter().len() == 0));
-
         let mut tokens: Vec<Token> = Vec::new();
         for item in items.get_all_tokens() {
             tokens.push(item);
         }
-
 
         match tokens.len() > 0 {
             true => {
                 Space {
                     space_name: match &words_of_interests {
                         None => {"Global Space".to_string()}
-                        Some(x) => {format!("Space of {}", x[0])}
+                        Some(x) => {format!("{}", x.name)}
                     },
                     tokens: match &words_of_interests {
                         None => {
@@ -38,7 +37,10 @@ impl SpaceGenerator for Space {
                         }
                         Some(_) => {tokens}
                     },
-                    words_of_interests,
+                    words_of_interests: match words_of_interests {
+                        None => {None}
+                        Some(x) => {Some(x.seeds)}
+                    }
                 }
             },
             false => {
@@ -88,31 +90,15 @@ impl SpaceGenerator for Space {
         println!("--- Summary of Space ---");
         println!("number of tokens: {}", self.tokens.len());
         println!("dimensions: {}", self.tokens[0].embedding.len());
-        println!("token of interest: {}", self.words_of_interests.clone().unwrap_or(vec![]).join(", "));
+        println!("token of interest: {}", match &self.words_of_interests {
+            None => {"None".to_string()}
+            Some(x) => {x.join(", ")}
+        });
         println!("-----------------------");
     }
 }
 
-// fn scale_tokens(tokens: Vec<Token>) -> Vec<Token> {
-//     // z-score normalization
-//     let center = get_center(tokens.clone());
-//     let std = get_std(tokens.clone());
-//     let mut scaled_tokens: Vec<Token> = Vec::new();
-//     for token in tokens {
-//         let mut scaled_embedding: Vec<f64> = Vec::new();
-//         for i in 0..token.embedding.len() {
-//             scaled_embedding.push((token.embedding[i] - center[i]) / std[i]);
-//         }
-//         scaled_tokens.push(Token {
-//             word: token.word,
-//             line_num: token.line_num,
-//             position: token.position,
-//             embedding: scaled_embedding,
-//         });
-//     }
-//     scaled_tokens
-// }
-//
+
 fn pca(tokens: Vec<Token>, pca_dimension: Option<usize>) -> Vec<Token> {
     // use PCA to do the dimension reduction.
     // reduce the demension to 512 by default
@@ -213,6 +199,7 @@ fn find(space_tokens: &Vec<Token>, passed_in_words: &Vec<String>) -> Vec<Token> 
             find_tokens.push(token.clone())
         }
     }
+    println!("{:?}, The number of tokens found is {}", passed_in_words, find_tokens.len());
     find_tokens
 }
 

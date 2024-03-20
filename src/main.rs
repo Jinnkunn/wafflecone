@@ -15,6 +15,7 @@ use crate::space::space_generator::Space;
 use crate::space::space_calculator::Calculator;
 use crate::space::SpaceCalculator;
 
+
 fn main() {
     let data = ConceptXReader::new().read("./test_data/layer12.json", true);
     let space = Space::new(data, None, Some(512));

@@ -13,6 +13,7 @@ use rand::prelude::*;
 pub struct Space {
     pub space_name: String,
     pub tokens: Vec<Token>,
+    pub space_center: Vec<f64>,
     pub words_of_interests: Option<Vec<String>>,
 }
 
@@ -33,10 +34,11 @@ impl SpaceGenerator for Space {
                     },
                     tokens: match &words_of_interests {
                         None => {
-                            pca(tokens, pca_dimension)
+                            pca(tokens.clone(), pca_dimension)
                         }
-                        Some(_) => {tokens}
+                        Some(_) => {tokens.clone()}
                     },
+                    space_center: get_center(tokens.clone()),
                     words_of_interests: match words_of_interests {
                         None => {None}
                         Some(x) => {Some(x.seeds)}

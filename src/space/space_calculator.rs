@@ -5,6 +5,11 @@ use crate::space::SpaceCalculator;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub enum SimilarityType {
+    TokenToGroup,
+    GroupToToken
+}
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SimilarityItem {
@@ -15,6 +20,7 @@ pub struct SimilarityItem {
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Similarity {
     pub(crate) name: String,
+    pub(crate) similarity_type: SimilarityType,
     pub(crate) similarity: Vec<SimilarityItem>,
     pub(crate) softmax: Vec<SimilarityItem>,
 }
@@ -28,7 +34,8 @@ pub struct Bias {
 
 #[pyclass]
 pub struct Calculator{
-    pub(crate) similarity: Vec<Similarity>,
+    pub(crate) similarity_token_to_group: Vec<Similarity>,
+    pub(crate) similarity_group_to_token: Vec<Similarity>,
 }
 
 impl SpaceCalculator for Calculator {
@@ -37,32 +44,60 @@ impl SpaceCalculator for Calculator {
         // compare space is a list of space which only contains the gender words
         assert!(bias_group_spaces.len() > 0, "compare_space should have at least one space");
 
-        let mut similarity_dict: Vec<Similarity> = Vec::new();
+        let mut token_to_group_dict: Vec<Similarity> = Vec::new();
+        let mut group_to_token_dict: Vec<Similarity> = Vec::new();
+
+        let mut group_to_token_map: HashMap<String, Vec<SimilarityItem>> = HashMap::new();
+        for one_bias_group in &bias_group_spaces {
+            let one_bias_group_name = one_bias_group.space_name.clone();
+            group_to_token_map.insert(one_bias_group_name, Vec::new());
+        }
 
         for one_bias_free_token in &bias_free_token_space.tokens {
             // find the ideal similarity from ideal_similarities, which the space is one_compare_space
-            let mut relationship: Vec::<SimilarityItem> = Vec::new();
+            let mut relationship_token_to_group: Vec::<SimilarityItem> = Vec::new();
             for one_bias_group_space in &bias_group_spaces {
                 let similarity = cos_similarity(&one_bias_free_token.embedding, &one_bias_group_space.space_center);
-                relationship.push(
+                relationship_token_to_group.push(
                     SimilarityItem{
                         name: one_bias_group_space.space_name.clone(),
                         value: similarity
                     }
                 );
+
+                group_to_token_map.get_mut(&one_bias_group_space.space_name).unwrap().push(
+                    SimilarityItem{
+                        name: one_bias_free_token.word.clone(),
+                        value: similarity
+                    }
+                );
             }
 
-            similarity_dict.push(
+            token_to_group_dict.push(
                 Similarity{
                     name: one_bias_free_token.word.clone(),
-                    softmax: get_similarity_softmax(&relationship),
-                    similarity: relationship
+                    similarity_type: SimilarityType::TokenToGroup,
+                    softmax: get_similarity_softmax(&relationship_token_to_group),
+                    similarity: relationship_token_to_group
+                }
+            );
+        }
+
+        // group_to_token_map to vectors
+        for (group_name, similarity_items) in group_to_token_map.iter() {
+            group_to_token_dict.push(
+                Similarity{
+                    name: group_name.clone(),
+                    similarity_type: SimilarityType::GroupToToken,
+                    softmax: get_similarity_softmax(similarity_items),
+                    similarity: similarity_items.clone()
                 }
             );
         }
 
         Calculator{
-            similarity: similarity_dict.clone(),
+            similarity_token_to_group: token_to_group_dict.clone(),
+            similarity_group_to_token: group_to_token_dict.clone(),
         }
     }
 
@@ -120,12 +155,16 @@ fn get_entropy(similarity_dict: &Vec<Similarity>) -> Vec<Bias> {
 // Expose to Python
 #[pymethods]
 impl Calculator {
-    fn get_bias_report(&self) -> HashMap<String, f64> {
-        get_entropy(&self.similarity).iter().map(|bias| (bias.name.clone(), bias.bias)).collect()
+    fn get_bias_token_to_group(&self) -> HashMap<String, f64> {
+        get_entropy(&self.similarity_token_to_group).iter().map(|bias| (bias.name.clone(), bias.bias)).collect()
+    }
+
+    fn get_bias_group_to_token(&self) -> HashMap<String, f64> {
+        get_entropy(&self.similarity_group_to_token).iter().map(|bias| (bias.name.clone(), bias.bias)).collect()
     }
 
     fn get_bias(&self) -> f64 {
-        get_entropy(&self.similarity).iter().map(|bias| bias.bias).sum::<f64>() / self.similarity.len() as f64
+        get_entropy(&self.similarity_token_to_group).iter().map(|bias| bias.bias).sum::<f64>() / self.similarity_token_to_group.len() as f64
     }
 
     pub(crate) fn save_summary(&self, path: Option<&str>) {

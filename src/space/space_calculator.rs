@@ -171,6 +171,18 @@ impl Calculator {
         bias_group
     }
 
+    fn get_report_per_token(&self) -> HashMap<String, HashMap<String, f64>> {
+        let mut bias_token_to_group: HashMap<String, HashMap<String, f64>> = HashMap::new();
+        for one_similarity in &self.similarity_token_to_group {
+            let mut bias_token_to_group_inner: HashMap<String, f64> = HashMap::new();
+            for one_similarity_item in &one_similarity.similarity {
+                bias_token_to_group_inner.insert(one_similarity_item.name.clone(), one_similarity_item.value);
+            }
+            bias_token_to_group.insert(one_similarity.name.clone(), bias_token_to_group_inner);
+        }
+        bias_token_to_group
+    }
+
     fn get_report_per_group(&self) -> HashMap<String, HashMap<String, f64>> {
         // &self.similarity_group_to_token to HashMap
         let mut bias_group_to_token: HashMap<String, HashMap<String, f64>> = HashMap::new();

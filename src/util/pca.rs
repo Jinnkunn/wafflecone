@@ -1,5 +1,5 @@
-use nalgebra::{DMatrix, RowDVector, SVD};
 use crate::util::progress_bar::ProgressBar;
+use nalgebra::{DMatrix, RowDVector, SVD};
 
 pub struct PCA {
     mean: Vec<f64>,
@@ -12,7 +12,7 @@ impl PCA {
         PCA {
             mean: Vec::new(),
             components: DMatrix::zeros(0, 0),
-            n_components
+            n_components,
         }
     }
 
@@ -23,14 +23,19 @@ impl PCA {
         // Subtract the mean
         self.mean = x.row_mean().transpose().as_slice().to_vec();
 
-        assert_eq!(self.mean.len(), n_features, "Mean vector size does not match the number of features in the input data");
+        assert_eq!(
+            self.mean.len(),
+            n_features,
+            "Mean vector size does not match the number of features in the input data"
+        );
 
         let mean_vector = RowDVector::from_vec(self.mean.clone());
 
         let mut pb = ProgressBar::new(n_samples as u64, "PCA Fit", true);
 
         // Subtract the mean from each row
-        let x_centered: Vec<RowDVector<f64>> = x.row_iter()
+        let x_centered: Vec<RowDVector<f64>> = x
+            .row_iter()
             .map(|row| {
                 pb.inc(1);
                 row - &mean_vector
@@ -54,11 +59,11 @@ impl PCA {
         self
     }
 
-
     pub fn transform(&self, x: DMatrix<f64>) -> DMatrix<f64> {
         let mut pb = ProgressBar::new(x.nrows() as u64, "PCA Transform", true);
         let mean_vector = RowDVector::from_vec(self.mean.clone());
-        let rows: Vec<_> = x.row_iter()
+        let rows: Vec<_> = x
+            .row_iter()
             .map(|row| {
                 pb.inc(1);
                 row - &mean_vector
@@ -69,7 +74,6 @@ impl PCA {
         x_centered * &self.components
     }
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -82,11 +86,8 @@ mod tests {
         let x = DMatrix::from_row_slice(3, 2, &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
         let pca = PCA::new(2).fit(x.clone());
         let x_transformed = pca.transform(x);
-        let x_transformed_expected = DMatrix::from_row_slice(
-            3,
-            2,
-            &[-2.82842712, 0.0, 0.0, 0.0, 2.82842712, 0.0],
-        );
+        let x_transformed_expected =
+            DMatrix::from_row_slice(3, 2, &[-2.82842712, 0.0, 0.0, 0.0, 2.82842712, 0.0]);
         assert_abs_diff_eq!(x_transformed, x_transformed_expected, epsilon = 1e-6);
     }
 
@@ -95,11 +96,7 @@ mod tests {
         let x = DMatrix::from_row_slice(3, 2, &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
         let pca = PCA::new(1).fit(x.clone());
         let x_transformed = pca.transform(x);
-        let x_transformed_expected = DMatrix::from_row_slice(
-            3,
-            1,
-            &[-2.82842712, 0.0, 2.82842712],
-        );
+        let x_transformed_expected = DMatrix::from_row_slice(3, 1, &[-2.82842712, 0.0, 2.82842712]);
         assert_abs_diff_eq!(x_transformed, x_transformed_expected, epsilon = 1e-6);
     }
 }

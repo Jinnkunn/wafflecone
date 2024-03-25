@@ -1,5 +1,5 @@
 use pyo3::pyclass;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[pyclass]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -10,9 +10,6 @@ pub struct SubspaceSeeds {
 
 impl SubspaceSeeds {
     pub fn new(name: String, seeds: Vec<String>) -> SubspaceSeeds {
-        SubspaceSeeds {
-            name,
-            seeds,
-        }
+        SubspaceSeeds { name, seeds }
     }
 }

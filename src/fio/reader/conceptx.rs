@@ -1,10 +1,10 @@
 use super::Reader;
 use crate::embedding::models::Line;
 use crate::embedding::models::Token;
-use crate::util::progress_bar::ProgressBar;
-use std::io::BufRead;
-use serde::{Deserialize, Serialize};
 use crate::util::constant;
+use crate::util::progress_bar::ProgressBar;
+use serde::{Deserialize, Serialize};
+use std::io::BufRead;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 struct LineConceptX {
@@ -36,9 +36,14 @@ impl Reader for ConceptXReader {
         let file = std::fs::File::open(path).unwrap();
         let buf = std::io::BufReader::new(&file);
 
-        let mut pb_readfile = ProgressBar::new(file.metadata().unwrap().len(), constant::FILE_READING, user_friendly);
+        let mut pb_readfile = ProgressBar::new(
+            file.metadata().unwrap().len(),
+            constant::FILE_READING,
+            user_friendly,
+        );
 
-        let activations = buf.lines()
+        let activations = buf
+            .lines()
             .map(|line| {
                 pb_readfile.inc(line.as_ref().unwrap().len() as u64);
                 line.unwrap()
@@ -64,7 +69,8 @@ impl Reader for ConceptXReader {
 
 fn converter(activations: Vec<LineConceptX>) -> Vec<Line> {
     let mut lines: Vec<Line> = Vec::new();
-    let mut pb_tokenlize = ProgressBar::new(activations.len() as u64, constant::TOKEN_GENERATING, true);
+    let mut pb_tokenlize =
+        ProgressBar::new(activations.len() as u64, constant::TOKEN_GENERATING, true);
     for line in activations {
         let mut tokens: Vec<Token> = Vec::new();
         for feature_index in 0..line.features.len() {
@@ -88,7 +94,6 @@ fn converter(activations: Vec<LineConceptX>) -> Vec<Line> {
     pb_tokenlize.finish();
     lines
 }
-
 
 #[cfg(test)]
 mod test {

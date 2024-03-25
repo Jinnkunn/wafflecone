@@ -1,7 +1,7 @@
-use std::fs::OpenOptions;
-use std::io::Write;
 use crate::fio::writer::WriterOperator;
 use crate::Calculator;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 impl WriterOperator for Calculator {
     fn write(&self, path: &str, _if_show: bool) {
@@ -12,6 +12,7 @@ impl WriterOperator for Calculator {
             .unwrap();
 
         // todo: format the output
-        file.write_all("This is the summary of the calculator\n".as_bytes()).unwrap();
+        file.write_all("This is the summary of the calculator\n".as_bytes())
+            .unwrap();
     }
 }

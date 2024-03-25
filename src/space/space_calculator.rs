@@ -174,7 +174,7 @@ impl Calculator {
         for one_similarity in &self.similarity_group_to_token {
             let mut total: f64 = 0.0;
             for one_similarity_item in &one_similarity.similarity {
-                total += total + one_similarity_item.value;
+                total += one_similarity_item.value;
             }
             bias_group.insert(
                 one_similarity.name.clone(),

@@ -153,7 +153,7 @@ fn get_entropy(similarity_dict: &Vec<Similarity>) -> Vec<Bias> {
         }
         entropy.push(Bias {
             name: one_similarity.name.clone(),
-            bias: -entropy_sum,
+            bias: entropy_sum,
         });
     }
     entropy

@@ -11,7 +11,6 @@ use embedding::models::Token;
 use fio::reader::conceptx::ConceptXReader;
 use fio::reader::Reader;
 
-use crate::fio::writer::WriterOperator;
 use crate::space::seeds::SubspaceSeeds;
 use crate::space::space_calculator::Calculator;
 use crate::space::space_generator::Space;
@@ -33,9 +32,6 @@ fn new_subspace_seeds(name: String, seeds: Vec<String>) -> SubspaceSeeds {
 fn calculator(
     path: &str,
     subspace_seeds: Vec<SubspaceSeeds>,
-    random_token_num: Option<f64>,      // number of random tokens
-    random_token_seed: Option<i64>,     // random seed
-    subspace_folder_path: Option<&str>, // folder path to save subspaces
     exclude_words: Option<Vec<String>>, // words to exclude from random tokens
     user_friendly: Option<bool>,
     pca_dimension: Option<usize>,
@@ -52,30 +48,15 @@ fn calculator(
     println!("Total number of tokens: {}", num_of_tokens);
 
     // Build the global space
-    let space = Space::new(data.clone(), None, pca_dimension);
+    let space = Space::new(data, None, pca_dimension);
 
     // all words need to be excluded: exclude_words + subspace_seeds
-    let mut exclude_words = exclude_words.unwrap_or(Vec::new());
+    let mut exclude_words = exclude_words.unwrap_or_default();
     for subspace_seed in &subspace_seeds {
         exclude_words.extend(subspace_seed.seeds.clone());
     }
-
-    // select random tokens from the global space
-    // then build a subspace with the random tokens
-    let random_token = space.get_random_tokens(
-        (num_of_tokens as f64 * random_token_num.unwrap_or(0.8)) as i64,
-        random_token_seed.unwrap_or(1),
-        Some(exclude_words),
-    );
-
-    let subspace_folder = subspace_folder_path.unwrap_or("./");
-
-    // save the random tokens to a file
-    let random_sub_space = Space::new(random_token.clone(), None, None);
-    random_sub_space.write(
-        format!("{}/random_subspace.txt", subspace_folder).as_str(),
-        user_friendly.unwrap_or(false),
-    );
+    let neutral_tokens = space.get_neutral_tokens(exclude_words);
+    let neutral_space = Space::new(neutral_tokens, None, pca_dimension);
 
     // build subspaces with the tokens of interests. e.g., male or female
     let mut sub_spaces: Vec<Space> = Vec::new();
@@ -86,7 +67,7 @@ fn calculator(
     }
 
     // compute the bias of the random subspace
-    Calculator::new(random_sub_space, sub_spaces)
+    Calculator::new(neutral_space, sub_spaces)
 }
 
 #[pyfunction]

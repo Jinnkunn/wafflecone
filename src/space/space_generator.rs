@@ -5,9 +5,6 @@ use crate::space::SubspaceSeeds;
 use crate::util::pca::PCA;
 use nalgebra::{DMatrix, RowDVector};
 
-use rand::prelude::*;
-use rand_chacha::ChaCha8Rng;
-
 #[derive(Clone, Debug)]
 pub struct Space {
     pub space_name: String,
@@ -58,7 +55,7 @@ impl SpaceGenerator for Space {
 
     /// Find the words of interest in the space
     fn find(&self, target_words: &Vec<String>) -> Vec<Token> {
-        find(&self.tokens.clone(), &target_words)
+        find(&self.tokens.clone(), target_words)
     }
 
     /// Calculate the center of the space
@@ -70,27 +67,14 @@ impl SpaceGenerator for Space {
         get_std(self.tokens.clone())
     }
 
-    /// Get random tokens from the space, which will be used to generate subspaces
-    fn get_random_tokens(
-        &self,
-        num: i64,
-        random_seed: i64,
-        exclude: Option<Vec<String>>,
-    ) -> Vec<Token> {
-        // combine exclude words and words of interests
-        let mut exclude: Vec<String> = match exclude {
-            None => Vec::new(),
-            Some(x) => x,
-        };
-        match self.words_of_interests.clone() {
-            None => {}
-            Some(x) => {
-                for word in x {
-                    exclude.push(word);
-                }
+    fn get_neutral_tokens(&self, exclude: Vec<String>) -> Vec<Token> {
+        let mut neutral_tokens: Vec<Token> = Vec::new();
+        for token in &self.tokens {
+            if !exclude.contains(&token.word) {
+                neutral_tokens.push(token.clone());
             }
         }
-        get_random_tokens(self.tokens.clone(), num, random_seed, Some(exclude))
+        neutral_tokens
     }
 
     /// Print the summary of the space
@@ -220,38 +204,4 @@ fn find(space_tokens: &Vec<Token>, passed_in_words: &Vec<String>) -> Vec<Token> 
         find_tokens.len()
     );
     find_tokens
-}
-
-fn get_random_tokens(
-    tokens: Vec<Token>,
-    num: i64,
-    random_seed: i64,
-    exclude: Option<Vec<String>>,
-) -> Vec<Token> {
-    let total_tokens = tokens.len();
-    let mut random_tokens: Vec<Token> = Vec::new();
-    // set random seed, get random tokens without replacement
-    let mut rng = ChaCha8Rng::seed_from_u64(random_seed as u64);
-    let mut random_indices: Vec<usize> = (0..total_tokens).collect();
-    random_indices.shuffle(&mut rng);
-
-    let mut selected_num = 0;
-    for i in 0..total_tokens {
-        // if tokens[random_indices[i as usize]].word is not in exclude
-        if exclude.is_some() {
-            if exclude
-                .clone()
-                .unwrap()
-                .contains(&tokens[random_indices[i as usize]].word)
-            {
-                continue;
-            }
-        }
-        random_tokens.push(tokens[random_indices[i as usize]].clone());
-        selected_num += 1;
-        if selected_num == num {
-            break;
-        }
-    }
-    random_tokens
 }

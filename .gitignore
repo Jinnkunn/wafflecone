@@ -2,3 +2,7 @@
 /*.txt
 /.venv
 /Cargo.lock
+.idea
+.trunk
+examples
+venv

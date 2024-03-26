@@ -43,7 +43,7 @@ impl SpaceCalculator for Calculator {
         // e.g., random space is the space without all the gender words
         // compare space is a list of space which only contains the gender words
         assert!(
-            bias_group_spaces.len() > 0,
+            !bias_group_spaces.is_empty(),
             "compare_space should have at least one space"
         );
 
@@ -214,7 +214,8 @@ impl Calculator {
 
     fn get_bias(&self) -> f64 {
         // average bias per token
-        self.get_bias_per_token().values().sum::<f64>() / self.get_bias_per_token().len() as f64
+        (self.get_bias_per_token().values().sum::<f64>() - self.get_bias_per_token().len() as f64)
+            .abs()
     }
 
     pub(crate) fn save_summary(&self, path: Option<&str>) {

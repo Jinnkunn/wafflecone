@@ -34,8 +34,8 @@ pub struct Bias {
 
 #[pyclass]
 pub struct Calculator {
-    pub(crate) similarity_token_to_group: Vec<Similarity>,
-    pub(crate) similarity_group_to_token: Vec<Similarity>,
+    pub(crate) similarity_per_token: Vec<Similarity>,
+    pub(crate) entropy_per_token: HashMap<String, Vec<Bias>>,
 }
 
 impl SpaceCalculator for Calculator {
@@ -48,13 +48,6 @@ impl SpaceCalculator for Calculator {
         );
 
         let mut token_to_group_dict: Vec<Similarity> = Vec::new();
-        let mut group_to_token_dict: Vec<Similarity> = Vec::new();
-
-        let mut group_to_token_map: HashMap<String, Vec<SimilarityItem>> = HashMap::new();
-        for one_bias_group in &bias_group_spaces {
-            let one_bias_group_name = one_bias_group.space_name.clone();
-            group_to_token_map.insert(one_bias_group_name, Vec::new());
-        }
 
         for one_bias_free_token in &bias_free_token_space.tokens {
             // find the ideal similarity from ideal_similarities, which the space is one_compare_space
@@ -68,14 +61,6 @@ impl SpaceCalculator for Calculator {
                     name: one_bias_group_space.space_name.clone(),
                     value: similarity,
                 });
-
-                group_to_token_map
-                    .get_mut(&one_bias_group_space.space_name)
-                    .unwrap()
-                    .push(SimilarityItem {
-                        name: one_bias_free_token.word.clone(),
-                        value: similarity,
-                    });
             }
 
             token_to_group_dict.push(Similarity {
@@ -86,21 +71,26 @@ impl SpaceCalculator for Calculator {
             });
         }
 
-        // group_to_token_map to vectors
-        for (group_name, similarity_items) in group_to_token_map.iter() {
-            group_to_token_dict.push(Similarity {
-                name: group_name.clone(),
-                similarity_type: SimilarityType::GroupToToken,
-                softmax: get_similarity_softmax(similarity_items),
-                similarity: similarity_items.clone(),
-            });
-        }
-
         Calculator {
-            similarity_token_to_group: token_to_group_dict.clone(),
-            similarity_group_to_token: group_to_token_dict.clone(),
+            similarity_per_token: token_to_group_dict.clone(),
+            entropy_per_token: get_entropy_map(&token_to_group_dict),
         }
     }
+}
+
+fn get_entropy_map(similarity_per_token: &Vec<Similarity>) -> HashMap<String, Vec<Bias>> {
+    let mut entropy_per_token: HashMap<String, Vec<Bias>> = HashMap::new();
+    for one_similarity in similarity_per_token.iter() {
+        let mut entropy_per_token_inner: Vec<Bias> = Vec::new();
+        for one_similarity_item in one_similarity.softmax.iter() {
+            entropy_per_token_inner.push(Bias {
+                name: one_similarity_item.name.clone(),
+                bias: -(one_similarity_item.value * one_similarity_item.value.log2()),
+            });
+        }
+        entropy_per_token.insert(one_similarity.name.clone(), entropy_per_token_inner);
+    }
+    entropy_per_token
 }
 
 fn get_similarity_softmax(similarity_dict: &Vec<SimilarityItem>) -> Vec<SimilarityItem> {
@@ -144,79 +134,87 @@ fn dot_product(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
     dot_product
 }
 
-fn get_entropy(similarity_dict: &Vec<Similarity>) -> Vec<Bias> {
-    let mut entropy: Vec<Bias> = Vec::new();
-    for one_similarity in similarity_dict.iter() {
-        let mut entropy_sum: f64 = 0.0;
-        for one_similarity_item in one_similarity.similarity.iter() {
-            entropy_sum += one_similarity_item.value * one_similarity_item.value.log2();
-        }
-        entropy.push(Bias {
-            name: one_similarity.name.clone(),
-            bias: entropy_sum,
-        });
-    }
-    entropy
-}
-
 // Expose to Python
 #[pymethods]
 impl Calculator {
     fn get_bias_per_token(&self) -> HashMap<String, f64> {
-        get_entropy(&self.similarity_token_to_group)
+        self.entropy_per_token
             .iter()
-            .map(|bias| (bias.name.clone(), bias.bias))
+            .map(|(token_name, bias)| {
+                (
+                    token_name.clone(),
+                    bias.iter().map(|bias| bias.bias).sum::<f64>(),
+                )
+            })
             .collect()
     }
 
     fn get_bias_per_group(&self) -> HashMap<String, f64> {
-        let mut bias_group: HashMap<String, f64> = HashMap::new();
-        for one_similarity in &self.similarity_group_to_token {
-            let mut total: f64 = 0.0;
-            for one_similarity_item in &one_similarity.similarity {
-                total += one_similarity_item.value;
+        let mut bias_per_group: HashMap<String, f64> = HashMap::new();
+        for one_similarity in &self.entropy_per_token {
+            for one_similarity_item in one_similarity.1 {
+                *bias_per_group
+                    .entry(one_similarity_item.name.clone())
+                    .or_insert(0.0) += one_similarity_item.bias;
             }
-            bias_group.insert(
-                one_similarity.name.clone(),
-                total / one_similarity.similarity.len() as f64,
-            );
         }
-        bias_group
+        bias_per_group
+            .iter()
+            .map(|(group_name, bias)| {
+                (
+                    group_name.clone(),
+                    *bias / self.entropy_per_token.len() as f64,
+                )
+            })
+            .collect()
     }
 
     fn get_report_per_token(&self) -> HashMap<String, HashMap<String, f64>> {
-        let mut bias_token_to_group: HashMap<String, HashMap<String, f64>> = HashMap::new();
-        for one_similarity in &self.similarity_token_to_group {
-            let mut bias_token_to_group_inner: HashMap<String, f64> = HashMap::new();
-            for one_similarity_item in &one_similarity.similarity {
-                bias_token_to_group_inner
-                    .insert(one_similarity_item.name.clone(), one_similarity_item.value);
-            }
-            bias_token_to_group.insert(one_similarity.name.clone(), bias_token_to_group_inner);
-        }
-        bias_token_to_group
+        self.entropy_per_token
+            .iter()
+            .map(|(token_name, entropy_per_token_inner)| {
+                let bias_token_to_group_inner: HashMap<String, f64> = entropy_per_token_inner
+                    .iter()
+                    .map(|one_similarity_item| {
+                        (one_similarity_item.name.clone(), one_similarity_item.bias)
+                    })
+                    .collect();
+                (token_name.clone(), bias_token_to_group_inner)
+            })
+            .collect()
     }
 
     fn get_report_per_group(&self) -> HashMap<String, HashMap<String, f64>> {
-        // &self.similarity_group_to_token to HashMap
+        // &self.similarity_per_group to HashMap
         let mut bias_group_to_token: HashMap<String, HashMap<String, f64>> = HashMap::new();
-        for one_similarity in &self.similarity_group_to_token {
-            let mut bias_group_to_token_inner: HashMap<String, f64> = HashMap::new();
-            for one_similarity_item in &one_similarity.similarity {
-                bias_group_to_token_inner
-                    .insert(one_similarity_item.name.clone(), one_similarity_item.value);
+        for one_similarity in &self.entropy_per_token {
+            for one_similarity_item in one_similarity.1 {
+                let bias = bias_group_to_token
+                    .entry(one_similarity_item.name.clone())
+                    .or_default();
+                bias.insert(one_similarity.0.clone(), one_similarity_item.bias);
             }
-            bias_group_to_token.insert(one_similarity.name.clone(), bias_group_to_token_inner);
         }
         bias_group_to_token
     }
 
+    fn get_similarity_report(&self) -> HashMap<String, Vec<HashMap<String, f64>>> {
+        let mut similarity: HashMap<String, Vec<HashMap<String, f64>>> = HashMap::new();
+        for one_similarity in &self.similarity_per_token {
+            let mut similarity_inner: Vec<HashMap<String, f64>> = Vec::new();
+            for one_similarity_item in &one_similarity.similarity {
+                let mut similarity_item: HashMap<String, f64> = HashMap::new();
+                similarity_item.insert(one_similarity_item.name.clone(), one_similarity_item.value);
+                similarity_inner.push(similarity_item);
+            }
+            similarity.insert(one_similarity.name.clone(), similarity_inner);
+        }
+        similarity
+    }
+
     fn get_bias(&self) -> f64 {
-        get_entropy(&self.similarity_token_to_group)
-            .iter()
-            .map(|bias| bias.bias)
-            .sum::<f64>()
-            / self.similarity_token_to_group.len() as f64
+        // average bias per token
+        self.get_bias_per_token().values().sum::<f64>() / self.get_bias_per_token().len() as f64
     }
 
     pub(crate) fn save_summary(&self, path: Option<&str>) {

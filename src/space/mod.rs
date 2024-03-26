@@ -12,7 +12,7 @@ pub trait SpaceGenerator {
         items: T,
         words_of_interests: Option<SubspaceSeeds>,
         pca_dimension: Option<usize>,
-    ) -> Space;
+    ) -> Self;
     fn set_space_name(&mut self, name: String);
     fn find(&self, words_of_interests: &Vec<String>) -> Vec<Token>;
     fn get_center(&self) -> Vec<f64>;

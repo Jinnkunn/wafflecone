@@ -5,6 +5,7 @@ mod fio;
 mod space;
 mod util;
 mod web;
+mod analyizer;
 
 use embedding::models::Token;
 
@@ -12,9 +13,9 @@ use fio::reader::conceptx::ConceptXReader;
 use fio::reader::Reader;
 
 use crate::space::seeds::SubspaceSeeds;
-use crate::space::space_calculator::Calculator;
+use crate::analyizer::calculator::Calculator;
 use crate::space::space_generator::Space;
-use crate::space::SpaceCalculator;
+use crate::analyizer::SpaceCalculator;
 use space::SpaceGenerator;
 
 #[pyfunction]
@@ -35,6 +36,7 @@ fn calculator(
     exclude_words: Option<Vec<String>>, // words to exclude from random tokens
     user_friendly: Option<bool>,
     pca_dimension: Option<usize>,
+    model_name: Option<String>,
 ) -> Calculator {
     let data = ConceptXReader::new().read(path, user_friendly.unwrap_or(false));
 
@@ -67,7 +69,10 @@ fn calculator(
     }
 
     // compute the bias of the random subspace
-    Calculator::new(neutral_space, sub_spaces)
+    Calculator::new(match model_name {
+        Some(name) => name,
+        None => path.to_string()
+    }, neutral_space, sub_spaces)
 }
 
 #[pyfunction]
@@ -82,6 +87,7 @@ fn wafflecone(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(calculator, m)?)?;
     m.add_function(wrap_pyfunction!(visualize, m)?)?;
     m.add_function(wrap_pyfunction!(new_subspace_seeds, m)?)?;
+    m.add_function(wrap_pyfunction!(analyizer::normalizer::bias_normalize, m)?)?;
     m.add_class::<SubspaceSeeds>()?;
     Ok(())
 }

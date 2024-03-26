@@ -25,13 +25,11 @@ impl SpaceGenerator for Space {
             tokens.push(item);
         }
 
-        match tokens.len() > 0 {
+        match !tokens.is_empty() {
             true => Space {
                 space_name: match &words_of_interests {
                     None => "Global Space".to_string(),
-                    Some(x) => {
-                        format!("{}", x.name)
-                    }
+                    Some(x) => x.name.to_string(),
                 },
                 tokens: match &words_of_interests {
                     None => pca(tokens.clone(), pca_dimension),

@@ -1,10 +1,8 @@
 pub mod seeds;
-pub mod space_calculator;
 pub mod space_generator;
 
 use super::Token;
 use crate::embedding::models::TokenOperators;
-use crate::space::space_generator::Space;
 use seeds::SubspaceSeeds;
 
 pub trait SpaceGenerator {
@@ -19,8 +17,4 @@ pub trait SpaceGenerator {
     fn get_std(&self) -> Vec<f64>;
     fn get_neutral_tokens(&self, exclude: Vec<String>) -> Vec<Token>;
     fn print_summary(&self);
-}
-
-pub trait SpaceCalculator {
-    fn new(random_space: Space, compare_space: Vec<Space>) -> Self;
 }

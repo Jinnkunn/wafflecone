@@ -1,23 +1,42 @@
+use crate::analyizer::SpaceCalculator;
 use crate::fio::writer::WriterOperator;
 use crate::space::space_generator::Space;
-use crate::space::SpaceCalculator;
-use pyo3::{pyclass, pymethods};
+use pyo3::{pyclass, pymethods, FromPyObject, PyAny, PyErr, PyResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
 pub enum SimilarityType {
     TokenToGroup,
     GroupToToken,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+impl<'a> FromPyObject<'a> for SimilarityType {
+    fn extract(obj: &'a PyAny) -> PyResult<Self> {
+        if let Ok(string) = obj.extract::<&str>() {
+            match string {
+                "TokenToGroup" => Ok(SimilarityType::TokenToGroup),
+                "GroupToToken" => Ok(SimilarityType::GroupToToken),
+                _ => Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                    "Invalid enum variant: {}",
+                    string
+                ))),
+            }
+        } else {
+            Err(PyErr::new::<pyo3::exceptions::PyTypeError, _>(
+                "Invalid type for enum conversion",
+            ))
+        }
+    }
+}
+
+#[derive(Debug, Clone, FromPyObject)]
 pub struct SimilarityItem {
     pub(crate) name: String,
     pub(crate) value: f64,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, FromPyObject)]
 pub struct Similarity {
     pub(crate) name: String,
     pub(crate) similarity_type: SimilarityType,
@@ -26,20 +45,26 @@ pub struct Similarity {
 }
 
 #[pyclass]
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone)]
 pub struct Bias {
     pub(crate) name: String,
     pub(crate) bias: f64,
 }
 
 #[pyclass]
+#[derive(Debug, Clone)]
 pub struct Calculator {
+    pub(crate) model_name: String,
     pub(crate) similarity_per_token: Vec<Similarity>,
     pub(crate) entropy_per_token: HashMap<String, Vec<Bias>>,
 }
 
 impl SpaceCalculator for Calculator {
-    fn new(bias_free_token_space: Space, bias_group_spaces: Vec<Space>) -> Calculator {
+    fn new(
+        model_name: String,
+        bias_free_token_space: Space,
+        bias_group_spaces: Vec<Space>,
+    ) -> Self {
         // e.g., random space is the space without all the gender words
         // compare space is a list of space which only contains the gender words
         assert!(
@@ -72,6 +97,7 @@ impl SpaceCalculator for Calculator {
         }
 
         Calculator {
+            model_name,
             similarity_per_token: token_to_group_dict.clone(),
             entropy_per_token: get_entropy_map(&token_to_group_dict),
         }
@@ -212,10 +238,14 @@ impl Calculator {
         similarity
     }
 
-    fn get_bias(&self) -> f64 {
+    pub(crate) fn get_bias(&self) -> f64 {
         // average bias per token
         (self.get_bias_per_token().values().sum::<f64>() - self.get_bias_per_token().len() as f64)
             .abs()
+    }
+
+    pub(crate) fn get_model_name(&self) -> String {
+        self.model_name.clone()
     }
 
     pub(crate) fn save_summary(&self, path: Option<&str>) {

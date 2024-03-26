@@ -7,6 +7,7 @@ def calculator(
     exclude_words: list[str] = None,  # words to exclude from tokens
     user_friendly: bool = None,
     pca_dimension: int = None,
+    model_name: str = None,
 ) -> "Calculator":
     """Print the calculator."""
 

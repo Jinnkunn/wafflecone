@@ -1,7 +1,7 @@
+use pyo3::prelude::PyModule;
+use pyo3::{Py, PyAny, Python};
 use std::process::Command;
 use std::thread;
-use pyo3::{Py, PyAny, Python};
-use pyo3::prelude::PyModule;
 
 pub struct Web {
     pub port: u16,
@@ -39,14 +39,13 @@ impl Web {
         println!("Control-C to stop the server");
 
         let _output = Command::new("python")
-                .arg("-m")
-                .arg("http.server")
-                .arg(format!("{}", self.port))
-                .arg("--directory")
-                .arg(path)
-                .output()
-                .expect("failed to execute process");
-
+            .arg("-m")
+            .arg("http.server")
+            .arg(format!("{}", self.port))
+            .arg("--directory")
+            .arg(path)
+            .output()
+            .expect("failed to execute process");
     }
 }
 
@@ -63,10 +62,10 @@ def get_dir():
             "",
             "",
         )
-            .unwrap()
-            .getattr("get_dir")
-            .unwrap()
-            .into();
+        .unwrap()
+        .getattr("get_dir")
+        .unwrap()
+        .into();
 
         // call object without any arguments
         fun.call0(py).unwrap()

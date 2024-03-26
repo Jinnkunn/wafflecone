@@ -13,7 +13,7 @@ pub struct Token {
     pub token_id: String,
 }
 
-impl Token{
+impl Token {
     pub fn new(word: String, position: usize, line_num: usize, embedding: Vec<f64>) -> Self {
         Token {
             word: word.clone(),
@@ -24,7 +24,6 @@ impl Token{
         }
     }
 }
-
 
 pub trait TokenOperators {
     fn get_all_tokens(&self) -> Vec<Token>;

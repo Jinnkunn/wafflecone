@@ -1,12 +1,11 @@
-use std::fs::OpenOptions;
-use std::io::Write;
 use crate::fio::writer::WriterOperator;
 use crate::space::space_generator::Space;
 use crate::util::constant;
 use crate::util::progress_bar::ProgressBar;
+use std::fs::OpenOptions;
+use std::io::Write;
 
 impl WriterOperator for Space {
-
     fn write(&self, path: &str, if_show: bool) {
         let mut file = OpenOptions::new()
             .write(true)
@@ -14,7 +13,11 @@ impl WriterOperator for Space {
             .open(path)
             .unwrap();
 
-        let mut progress_bar = ProgressBar::new(self.tokens.len() as u64, constant::SPACE_GENERATING, if_show);
+        let mut progress_bar = ProgressBar::new(
+            self.tokens.len() as u64,
+            constant::SPACE_GENERATING,
+            if_show,
+        );
 
         for token in &self.tokens {
             let mut line = String::new();

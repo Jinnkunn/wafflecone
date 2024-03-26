@@ -1,6 +1,5 @@
-
-use indicatif;
 use crate::util::constant;
+use indicatif;
 
 pub struct ProgressBar {
     bar: Option<indicatif::ProgressBar>,
@@ -23,12 +22,7 @@ impl ProgressBar {
                     if_show,
                 }
             }
-            false => {
-                ProgressBar {
-                    bar: None,
-                    if_show,
-                }
-            }
+            false => ProgressBar { bar: None, if_show },
         }
     }
 

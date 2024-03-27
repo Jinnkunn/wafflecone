@@ -2,7 +2,6 @@ use crate::analyizer::SpaceCalculator;
 use crate::fio::writer::WriterOperator;
 use crate::space::space_generator::Space;
 use pyo3::{pyclass, pymethods, FromPyObject, PyAny, PyErr, PyResult};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 #[derive(Debug, Clone)]
@@ -39,7 +38,6 @@ pub struct SimilarityItem {
 #[derive(Debug, Clone, FromPyObject)]
 pub struct Similarity {
     pub(crate) name: String,
-    pub(crate) similarity_type: SimilarityType,
     pub(crate) similarity: Vec<SimilarityItem>,
     pub(crate) softmax: Vec<SimilarityItem>,
 }
@@ -90,7 +88,6 @@ impl SpaceCalculator for Calculator {
 
             token_to_group_dict.push(Similarity {
                 name: one_bias_free_token.word.clone(),
-                similarity_type: SimilarityType::TokenToGroup,
                 softmax: get_similarity_softmax(&relationship_token_to_group),
                 similarity: relationship_token_to_group,
             });

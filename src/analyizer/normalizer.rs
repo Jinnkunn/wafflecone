@@ -1,47 +1,55 @@
-use std::collections::HashMap;
-
-use pyo3::prelude::*;
-use serde::{Deserialize, Serialize};
+use pyo3::{prelude::*, pyclass};
 
 use super::calculator::Calculator;
 
+#[pyclass]
+#[derive(Debug)]
+pub struct BiasNormalized {
+    #[pyo3(get)]
+    pub model_name: String,
+    #[pyo3(get)]
+    pub bias: f64,
+    #[pyo3(get)]
+    pub bias_raw: f64,
+    #[pyo3(get)]
+    pub index: i64,
+}
+
 #[pyfunction]
 #[pyo3(name = "result_normalize")]
-pub fn bias_normalize(calculators: Vec<Calculator>) -> Vec<HashMap<String, f64>> {
-    #[derive(Serialize, Deserialize, Debug)]
-    struct BiasNormalize {
-        name: String,
-        bias: f64,
-    }
-
-    let biases: Vec<BiasNormalize> = calculators
+pub fn bias_normalize(calculators: Vec<Calculator>) -> Vec<BiasNormalized> {
+    let mean = calculators
         .iter()
-        .map(|calculator| BiasNormalize {
-            name: calculator.get_model_name(),
-            bias: calculator.get_bias(),
+        .map(|calculator| calculator.entropy_per_token.len())
+        .sum::<usize>() as f64
+        / calculators.len() as f64;
+
+    let std_dev = (calculators
+        .iter()
+        .map(|calculator| (calculator.entropy_per_token.len() as f64 - mean).powi(2))
+        .sum::<f64>()
+        / calculators.len() as f64)
+        .sqrt();
+
+    let mut normalized_biases: Vec<BiasNormalized> = calculators
+        .iter()
+        .map(|calculator| {
+            let bias = calculator.get_bias();
+            let normalized_bias = (bias - mean) / std_dev;
+            BiasNormalized {
+                model_name: calculator.get_model_name(),
+                bias: normalized_bias,
+                bias_raw: bias,
+                index: -1,
+            }
         })
         .collect();
 
-    let sum: f64 = biases.iter().map(|bias| bias.bias).sum();
-    let mean = sum / biases.len() as f64;
+    normalized_biases.sort_by(|a, b| a.bias.partial_cmp(&b.bias).unwrap());
+    normalized_biases
+        .iter_mut()
+        .enumerate()
+        .for_each(|(i, item)| item.index = i as i64);
 
-    let variance: f64 = biases
-        .iter()
-        .map(|bias| (bias.bias - mean).powi(2))
-        .sum();
-    let std_dev = (variance / biases.len() as f64).sqrt();
-
-    let result: Vec<HashMap<String, f64>> = biases
-        .iter()
-        .map(|bias| {
-            let mut one_result: HashMap<String, f64> = HashMap::new();
-            one_result.insert(
-                bias.name.clone(),
-                (bias.bias - mean) / std_dev,
-            );
-            one_result
-        })
-        .collect();
-
-    result
+    normalized_biases
 }

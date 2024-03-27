@@ -1,21 +1,21 @@
 use pyo3::prelude::*;
 
+mod analyizer;
 mod embedding;
 mod fio;
 mod space;
 mod util;
 mod web;
-mod analyizer;
 
 use embedding::models::Token;
 
 use fio::reader::conceptx::ConceptXReader;
 use fio::reader::Reader;
 
-use crate::space::seeds::SubspaceSeeds;
 use crate::analyizer::calculator::Calculator;
-use crate::space::space_generator::Space;
 use crate::analyizer::SpaceCalculator;
+use crate::space::seeds::SubspaceSeeds;
+use crate::space::space_generator::Space;
 use space::SpaceGenerator;
 
 #[pyfunction]
@@ -40,9 +40,6 @@ fn calculator(
 ) -> Calculator {
     let data = ConceptXReader::new().read(path, user_friendly.unwrap_or(false));
 
-    // turn each item of subspace_seed into raw format
-    println!("Subspace seeds: {:?}", subspace_seeds);
-
     let mut num_of_tokens = 0;
     for line in &data {
         num_of_tokens += line.tokens.len();
@@ -64,15 +61,19 @@ fn calculator(
     let mut sub_spaces: Vec<Space> = Vec::new();
 
     for subspace_seed in subspace_seeds {
-        let sub_space = Space::new(space.find(&subspace_seed.seeds), Some(subspace_seed), None);
+        let sub_space = Space::new(space.find(&subspace_seed), Some(subspace_seed), None);
         sub_spaces.push(sub_space);
     }
 
     // compute the bias of the random subspace
-    Calculator::new(match model_name {
-        Some(name) => name,
-        None => path.to_string()
-    }, neutral_space, sub_spaces)
+    Calculator::new(
+        match model_name {
+            Some(name) => name,
+            None => path.to_string(),
+        },
+        neutral_space,
+        sub_spaces,
+    )
 }
 
 #[pyfunction]

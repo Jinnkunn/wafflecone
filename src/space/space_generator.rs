@@ -10,40 +10,35 @@ pub struct Space {
     pub space_name: String,
     pub tokens: Vec<Token>,
     pub space_center: Vec<f64>,
-    pub words_of_interests: Option<Vec<String>>,
+    pub subspace_seed_words: Option<Vec<String>>,
 }
 
 impl SpaceGenerator for Space {
     fn new<T: TokenOperators>(
         items: T,
-        words_of_interests: Option<SubspaceSeeds>,
+        subspace_seeds: Option<SubspaceSeeds>,
         pca_dimension: Option<usize>,
-    ) -> Space {
-        // assert!((words_of_interests.iter().len() > 0 && parent_space.iter().len() > 0) || (words_of_interests.iter().len() == 0 && parent_space.iter().len() == 0));
+    ) -> Self {
         let mut tokens: Vec<Token> = Vec::new();
         for item in items.get_all_tokens() {
             tokens.push(item);
         }
 
-        match !tokens.is_empty() {
-            true => Space {
-                space_name: match &words_of_interests {
-                    None => "Global Space".to_string(),
-                    Some(x) => x.name.to_string(),
-                },
-                tokens: match &words_of_interests {
-                    None => pca(tokens.clone(), pca_dimension),
-                    Some(_) => tokens.clone(),
-                },
-                space_center: get_center(tokens.clone()),
-                words_of_interests: match words_of_interests {
-                    None => None,
-                    Some(x) => Some(x.seeds),
-                },
-            },
-            false => {
-                panic!("The space is empty!");
-            }
+        if tokens.is_empty() {
+            panic!("The space is empty!");
+        }
+
+        Space {
+            space_name: subspace_seeds
+                .as_ref()
+                .map(|seeds| seeds.name.to_string())
+                .unwrap_or_else(|| "Global".to_string()),
+            tokens: subspace_seeds
+                .as_ref()
+                .map(|_| tokens.clone())
+                .unwrap_or_else(|| pca(tokens.clone(), pca_dimension)),
+            space_center: get_center(tokens.clone()),
+            subspace_seed_words: subspace_seeds.map(|seeds| seeds.seeds),
         }
     }
 
@@ -52,8 +47,12 @@ impl SpaceGenerator for Space {
     }
 
     /// Find the words of interest in the space
-    fn find(&self, target_words: &Vec<String>) -> Vec<Token> {
-        find(&self.tokens.clone(), target_words)
+    fn find(&self, subspace_seed: &SubspaceSeeds) -> Vec<Token> {
+        find(
+            &self.tokens.clone(),
+            &subspace_seed.seeds,
+            subspace_seed.name.clone(),
+        )
     }
 
     /// Calculate the center of the space
@@ -82,33 +81,22 @@ impl SpaceGenerator for Space {
         println!("dimensions: {}", self.tokens[0].embedding.len());
         println!(
             "token of interest: {}",
-            match &self.words_of_interests {
-                None => {
-                    "None".to_string()
-                }
-                Some(x) => {
-                    x.join(", ")
-                }
-            }
+            self.subspace_seed_words
+                .as_ref()
+                .map(|x| x.join(", "))
+                .unwrap_or_else(|| "None".to_string())
         );
         println!("-----------------------");
     }
 }
 
 fn pca(tokens: Vec<Token>, pca_dimension: Option<usize>) -> Vec<Token> {
-    // use PCA to do the dimension reduction.
-    // reduce the demension to 512 by default
-
     let n_components = match pca_dimension {
         None => return tokens,
         Some(x) => x,
     };
 
-    println!("The number of embedding is {}", tokens[0].embedding.len());
     if tokens[0].embedding.len() <= n_components {
-        println!(
-            "The number of tokens is less than the number of components, so PCA is not applied."
-        );
         return tokens;
     }
 
@@ -125,17 +113,18 @@ fn pca(tokens: Vec<Token>, pca_dimension: Option<usize>) -> Vec<Token> {
 
     let transformed_embeddings = pca_model.transform(embeddings);
 
-    let mut updated_tokens: Vec<Token> = Vec::new();
-    for (i, token) in tokens.iter().enumerate() {
-        updated_tokens.push(Token::new(
-            token.word.clone(),
-            token.line_num,
-            token.position,
-            transformed_embeddings.row(i).iter().cloned().collect(),
-        ));
-    }
-
-    updated_tokens
+    tokens
+        .iter()
+        .enumerate()
+        .map(|(i, token)| {
+            Token::new(
+                token.word.clone(),
+                token.line_num,
+                token.position,
+                transformed_embeddings.row(i).iter().cloned().collect(),
+            )
+        })
+        .collect()
 }
 
 fn get_std(tokens: Vec<Token>) -> Vec<f64> {
@@ -157,49 +146,32 @@ fn get_std(tokens: Vec<Token>) -> Vec<f64> {
 }
 
 fn get_center(tokens: Vec<Token>) -> Vec<f64> {
-    // sort the embeddings
-    let mut embeddings: Vec<f64> = Vec::new();
-    for token in &tokens {
-        embeddings.push(token.embedding.iter().sum::<f64>());
-    }
-    embeddings.sort_by(|a, b| a.partial_cmp(b).unwrap());
-
-    // calculate the quartiles
-    let q1 = embeddings[embeddings.len() / 4];
-    let q3 = embeddings[embeddings.len() * 3 / 4];
-    let iqr = q3 - q1;
-
-    // filter out the outliers
-    let mut filtered_embeddings: Vec<f64> = Vec::new();
-    for embedding in embeddings {
-        if embedding >= q1 - 1.5 * iqr && embedding <= q3 + 1.5 * iqr {
-            filtered_embeddings.push(embedding);
-        }
-    }
-
-    // calculate the center
     let mut center: Vec<f64> = Vec::new();
+
     for i in 0..tokens[0].embedding.len() {
-        let mut sum = 0.0;
-        for token in &tokens {
-            sum += token.embedding[i];
-        }
+        let sum: f64 = tokens.iter().map(|token| token.embedding[i]).sum();
         center.push(sum / tokens.len() as f64);
     }
+
     center
 }
 
-fn find(space_tokens: &Vec<Token>, passed_in_words: &Vec<String>) -> Vec<Token> {
-    let mut find_tokens: Vec<Token> = Vec::new();
-    for token in space_tokens {
-        if passed_in_words.contains(&token.word) {
-            find_tokens.push(token.clone())
-        }
-    }
+fn find(
+    space_tokens: &Vec<Token>,
+    passed_in_words: &Vec<String>,
+    subspace_name: String,
+) -> Vec<Token> {
+    let find_tokens: Vec<Token> = space_tokens
+        .iter()
+        .filter(|token| passed_in_words.contains(&token.word))
+        .cloned()
+        .collect();
+
     println!(
-        "{:?}, The number of tokens found is {}",
-        passed_in_words,
+        "Subpace `{}`: The number of tokens found is {}",
+        subspace_name,
         find_tokens.len()
     );
+
     find_tokens
 }

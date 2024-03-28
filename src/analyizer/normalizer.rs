@@ -1,6 +1,8 @@
 use pyo3::{prelude::*, pyclass};
 
-use super::calculator::Calculator;
+use crate::analyizer::calculator::Calculator;
+
+use crate::util::normalization::z_score_noramlization;
 
 #[pyclass]
 #[derive(Debug)]
@@ -18,38 +20,25 @@ pub struct BiasNormalized {
 #[pyfunction]
 #[pyo3(name = "result_normalize")]
 pub fn bias_normalize(calculators: Vec<Calculator>) -> Vec<BiasNormalized> {
-    let mean = calculators
-        .iter()
-        .map(|calculator| calculator.entropy_per_token.len())
-        .sum::<usize>() as f64
-        / calculators.len() as f64;
-
-    let std_dev = (calculators
-        .iter()
-        .map(|calculator| (calculator.entropy_per_token.len() as f64 - mean).powi(2))
-        .sum::<f64>()
-        / calculators.len() as f64)
-        .sqrt();
-
-    let mut normalized_biases: Vec<BiasNormalized> = calculators
-        .iter()
-        .map(|calculator| {
-            let bias = calculator.get_bias();
-            let normalized_bias = (bias - mean) / std_dev;
-            BiasNormalized {
-                model_name: calculator.get_model_name(),
-                bias: normalized_bias,
-                bias_raw: bias,
-                index: -1,
+    let mut result: Vec<BiasNormalized> = Vec::new();
+    for calculator in calculators {
+        let mut bias_raw: Vec<f64> = Vec::new();
+        for similarity in calculator.similarity_per_token.clone() {
+            for item in similarity.similarity {
+                bias_raw.push(item.value);
             }
-        })
-        .collect();
-
-    normalized_biases.sort_by(|a, b| a.bias.partial_cmp(&b.bias).unwrap());
-    normalized_biases
-        .iter_mut()
-        .enumerate()
-        .for_each(|(i, item)| item.index = i as i64);
-
-    normalized_biases
+        }
+        let bias_normalized = z_score_noramlization(bias_raw);
+        for (index, similarity) in calculator.similarity_per_token.iter().enumerate() {
+            for item in similarity.similarity.iter() {
+                result.push(BiasNormalized {
+                    model_name: similarity.name.clone(),
+                    bias: bias_normalized[index],
+                    bias_raw: item.value,
+                    index: index as i64,
+                });
+            }
+        }
+    }
+    result
 }

@@ -16,7 +16,8 @@ use crate::analyizer::calculator::Calculator;
 use crate::analyizer::SpaceCalculator;
 use crate::space::seeds::SubspaceSeeds;
 use crate::space::space_generator::Space;
-use space::SpaceGenerator;
+use crate::space::SpaceGenerator;
+use crate::util::Message;
 
 #[pyfunction]
 fn version() {
@@ -38,6 +39,7 @@ fn calculator(
     pca_dimension: Option<usize>,
     model_name: Option<String>,
 ) -> Calculator {
+    Message::calculator_info(model_name.clone(), path, pca_dimension);
     let data = ConceptXReader::new().read(path, user_friendly.unwrap_or(false));
 
     let mut num_of_tokens = 0;

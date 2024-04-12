@@ -90,7 +90,6 @@ fn wafflecone(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(calculator, m)?)?;
     m.add_function(wrap_pyfunction!(visualize, m)?)?;
     m.add_function(wrap_pyfunction!(new_subspace_seeds, m)?)?;
-    m.add_function(wrap_pyfunction!(analyizer::normalizer::bias_normalize, m)?)?;
     m.add_class::<SubspaceSeeds>()?;
     Ok(())
 }

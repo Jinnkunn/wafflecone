@@ -54,7 +54,6 @@ pub struct Bias {
 pub struct Calculator {
     pub(crate) model_name: String,
     pub(crate) number_of_bias_groups: usize,
-    pub(crate) number_of_bias_free_tokens: usize,
     pub(crate) similarity_per_token: Vec<Similarity>,
     pub(crate) entropy_per_token: HashMap<String, Vec<Bias>>,
 }
@@ -98,7 +97,6 @@ impl SpaceCalculator for Calculator {
         Calculator {
             model_name,
             number_of_bias_groups: bias_group_spaces.len(),
-            number_of_bias_free_tokens: bias_free_token_space.tokens.len(),
             similarity_per_token: token_to_group_dict.clone(),
             entropy_per_token: get_entropy_map(&token_to_group_dict),
         }
@@ -148,10 +146,17 @@ fn cos_similarity(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
         "center1 and center2 should have the same length"
     );
     // calculate the cosine similarity between two vectors
-    let dot_product_result = dot_product(center1, center2);
-    let center1_norm = dot_product(center1, center1).sqrt();
-    let center2_norm = dot_product(center2, center2).sqrt();
-    dot_product_result / (center1_norm * center2_norm)
+    // let dot_product_result = dot_product(center1, center2);
+    // let center1_norm = dot_product(center1, center1).sqrt();
+    // let center2_norm = dot_product(center2, center2).sqrt();
+    // dot_product_result / (center1_norm * center2_norm)
+
+    // eclidian distance
+    let mut distance: f64 = 0.0;
+    for i in 0..center1.len() {
+        distance += (center1[i] - center2[i]).powi(2);
+    }
+    distance.sqrt()
 }
 
 fn dot_product(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
@@ -167,25 +172,12 @@ fn dot_product(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
 #[pymethods]
 impl Calculator {
     fn get_bias_per_token(&self) -> HashMap<String, f64> {
-        let raw_reuslt: HashMap<String, f64> = self.entropy_per_token
+        self.entropy_per_token
             .iter()
             .map(|(token_name, bias)| {
                 (
                     token_name.clone(),
                     bias.iter().map(|bias| bias.bias).sum::<f64>(),
-                )
-            })
-            .collect();
-
-        // do a min-max normalization
-        let max_bias = raw_reuslt.values().fold(f64::NEG_INFINITY, |a, &b| f64::max(a, b));
-        let min_bias = raw_reuslt.values().fold(f64::INFINITY, |a, &b| f64::min(a, b));
-        raw_reuslt
-            .iter()
-            .map(|(token_name, bias)| {
-                (
-                    token_name.clone(),
-                    (bias - min_bias) / (max_bias - min_bias),
                 )
             })
             .collect()
@@ -258,7 +250,9 @@ impl Calculator {
         let prob_one_class = 1.0 / self.number_of_bias_groups as f64;
         let idea_entropy = -(prob_one_class * prob_one_class.log2()) * self.number_of_bias_groups as f64;
 
-        ((self.get_bias_per_token().values().sum::<f64>() / self.number_of_bias_free_tokens as f64 - idea_entropy).abs()) * 100.0
+        let bias_per_token = self.get_bias_per_token();
+
+        idea_entropy - bias_per_token.values().sum::<f64>() / bias_per_token.len() as f64
     }
 
     pub(crate) fn get_model_name(&self) -> String {

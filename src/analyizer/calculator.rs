@@ -245,7 +245,8 @@ impl Calculator {
 
         let bias_per_token = self.get_bias_per_token();
 
-        idea_entropy - bias_per_token.values().sum::<f64>() / bias_per_token.len() as f64
+        // map the bias into the range of [0, 1]
+        (idea_entropy - bias_per_token.values().sum::<f64>() / bias_per_token.len() as f64) / idea_entropy * 100.0
     }
 
     pub(crate) fn get_model_name(&self) -> String {

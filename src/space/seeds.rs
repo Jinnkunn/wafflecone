@@ -4,7 +4,9 @@ use serde::{Deserialize, Serialize};
 #[pyclass]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SubspaceSeeds {
+    #[pyo3(get, set)]
     pub name: String,
+    #[pyo3(get, set)]
     pub seeds: Vec<String>,
 }
 

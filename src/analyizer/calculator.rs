@@ -146,17 +146,10 @@ fn cos_similarity(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
         "center1 and center2 should have the same length"
     );
     // calculate the cosine similarity between two vectors
-    // let dot_product_result = dot_product(center1, center2);
-    // let center1_norm = dot_product(center1, center1).sqrt();
-    // let center2_norm = dot_product(center2, center2).sqrt();
-    // dot_product_result / (center1_norm * center2_norm)
-
-    // eclidian distance
-    let mut distance: f64 = 0.0;
-    for i in 0..center1.len() {
-        distance += (center1[i] - center2[i]).powi(2);
-    }
-    distance.sqrt()
+    let dot_product_result = dot_product(center1, center2);
+    let center1_norm = dot_product(center1, center1).sqrt();
+    let center2_norm = dot_product(center2, center2).sqrt();
+    dot_product_result / (center1_norm * center2_norm)
 }
 
 fn dot_product(center1: &Vec<f64>, center2: &Vec<f64>) -> f64 {
